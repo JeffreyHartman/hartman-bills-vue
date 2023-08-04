@@ -1,7 +1,7 @@
 <template>
-  <div class="bill-item">
-    <h2>{{ bill.name }}</h2>
-    <div class="bill-item__meta">
+  <div class="bill-item mb-4">
+    <div class="font-bold text-xl mb-2">{{ bill.name }}</div>
+    <div class="text-gray-700 text-base">
       <p>Due: {{ bill.dueDate }}</p>
       <p>Amount: {{ bill.amount }}</p>
     </div>

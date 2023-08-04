@@ -1,10 +1,14 @@
 <template>
-  <div class="bills-list">
-    <bill-item
-      v-for="bill in bills"
-      :key="bill.id"
-      :bill="bill"
-    />
+  <div class="container mx-auto px-4 max-w-md">
+    <div class="bills-list">
+      <bill-item
+        v-for="bill in bills"
+        :key="bill.id"
+        :bill="bill"
+        class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+      >      
+    </bill-item>
+    </div>
   </div>
 </template>
 
