@@ -1,18 +1,37 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <bills-list></bills-list>
-  <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-    Click me
-  </button>
+  <app-header></app-header>
+  <div class="dark:bg-black dark:text-white min-h-screen">    
+    <bills-list></bills-list>
+    <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+      Click me
+    </button>
+  </div>
 </template>
 
 <script>
 import BillsList from '@/components/BillsList.vue'
+import AppHeader from '@/components/AppHeader.vue'
 
 export default {
   name: 'App',
   components: {
-    BillsList
+    BillsList,
+    AppHeader
+  },
+  data() {
+    return {
+      isDebouncing: false
+    }
+  },
+  methods: {
+    toggleDarkMode() {
+      if (this.isDebouncing) return;
+      this.isDebouncing = true;
+      setTimeout(() => {
+        document.body.classList.toggle('dark')
+        this.isDebouncing = false;
+      }, 300);
+    }
   }
 }
 </script>
