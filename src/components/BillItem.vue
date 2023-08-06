@@ -1,16 +1,18 @@
 <template>
   <div class="bill-item flex justify-between mb-4">
     <div class="text-left">
-      <div class="font-bold text-xl mb-2">{{ bill.name }}</div>
-      <div>{{ formatDate(bill.dueDate) }}</div>
+      <div class="mb-2 text-sm">{{ bill.name }}</div>
+      <div class="text-gray-400 text-xs">{{ formatDate(bill.dueDate) }} > {{ daysUntilDue(bill.dueDate) }} days</div>
     </div>    
     <div class="text-gray-700 dark:text-white text-right">      
-      <div>{{ bill.amount }}</div>
+      <div>{{ formatAmount(bill.amount) }}</div>
     </div>
   </div>
 </template>
 
 <script>
+import { formatDate, formatAmount } from '@/utils/formatting.js';
+
 export default {
   name: 'BillItem',
   props: {
@@ -20,10 +22,13 @@ export default {
     }
   },
   methods: {
-    formatDate(dateString) {
-      const options = { month: 'short', day: 'numeric' };
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', options);
+    formatDate,
+    formatAmount,
+    daysUntilDue(dueDate) {
+      const today = new Date();
+      const due = new Date(dueDate);
+      const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+      return diffDays;
     }
   }
 }

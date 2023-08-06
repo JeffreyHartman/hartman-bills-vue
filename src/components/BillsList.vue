@@ -1,21 +1,21 @@
 <template>
-  <div class="container mx-auto px-4 max-w-md dark:bg-black dark:text-white">
+  <div class="container mx-auto max-w-md dark:bg-black dark:text-white">
     <div class="bills-list">
       <div v-for="(group, month) in groupedBills" :key="month">
         <!-- Month Header -->
-        <div class="flex justify-between items-center">
-          <div class="text-xl font-bold">{{ month }}</div>
-          <div class="text-xl font-bold">{{ group.total }}</div>
+        <div class="flex justify-between items-center bg-gray-200 dark:bg-gray-600 rounded-md px-4 mt-2">
+          <div class="font-bold">{{ month }}</div>
+          <div class="font-bold">{{ formatAmount(group.total) }}</div>
         </div>
-        <hr />
+        
         <div v-for="bill in group.bills" :key="bill.id">
           <bill-item          
             :bill="bill"
             class="bg-white dark:bg-black px-8 pt-1"
           >        
           </bill-item>
-        </div>
-        <hr />
+          <hr class="dark:border-gray-700"/>
+        </div>        
       </div>      
     </div>
   </div>
@@ -47,6 +47,11 @@ export default {
         return acc;
       }, {});
     }    
+  },
+  methods: {
+    formatAmount(amount) {
+      return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    }
   },
   data() {
     return {
