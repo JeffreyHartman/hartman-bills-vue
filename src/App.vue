@@ -1,7 +1,7 @@
 <template>
   <div class="dark:bg-black dark:text-white min-h-screen">
-    <app-header></app-header>      
-    <bills-list></bills-list>
+    <app-header></app-header>
+    <router-view/>  
     <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
       Dark Mode toggle!
     </button>
@@ -9,13 +9,11 @@
 </template>
 
 <script>
-import BillsList from '@/components/BillsList.vue'
 import AppHeader from '@/components/AppHeader.vue'
 
 export default {
   name: 'App',
   components: {
-    BillsList,
     AppHeader
   },
   data() {
@@ -43,6 +41,18 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+}
+
+nav {
+  padding: 30px;
+}
+
+nav a {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+nav a.router-link-exact-active {
+  color: #42b983;
 }
 </style>

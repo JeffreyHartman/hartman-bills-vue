@@ -13,6 +13,7 @@
     <!-- Empty div for spacing -->
     <div class="w-6"></div>
   </div>
+  
 </template>
 
 <script>

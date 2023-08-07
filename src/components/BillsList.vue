@@ -1,9 +1,20 @@
 <template>
   <div class="container mx-auto max-w-md dark:bg-black dark:text-white">
+    <!-- Bills navigation -->
+    <div class="navbar p-4 bg-gray-200 dark:bg-gray-800 mb-4 rounded-md text-sm">
+        <button :class="{ 'active-filter': filter === 'upcoming' }" @click="setFilter('upcoming')" class="nav-button">UPCOMING</button>
+        <div class="overdue-wrapper">
+          <div v-if="hasOverdueBills" class="warning-symbol"></div>
+          <button :class="{ 'active-filter': filter === 'overdue' }" @click="setFilter('overdue')" class="nav-button">OVERDUE</button>
+        </div>
+        <button :class="{ 'active-filter': filter === 'recurring' }" @click="setFilter('recurring')" class="nav-button">RECURRING</button>
+        <button :class="{ 'active-filter': filter === 'paid' }" @click="setFilter('paid')" class="nav-button">PAID</button>
+    </div>
+
     <div class="bills-list">
       <div v-for="(group, month) in groupedBills" :key="month">
         <!-- Month Header -->
-        <div class="flex justify-between items-center bg-gray-200 dark:bg-gray-600 rounded-md px-4 mt-2">
+        <div class="flex justify-between items-center bg-gray-200 dark:bg-gray-600 rounded-md px-4 mt-4">
           <div class="font-bold">{{ month }}</div>
           <div class="font-bold">{{ formatAmount(group.total) }}</div>
         </div>
@@ -23,6 +34,7 @@
 
 <script>
 import BillItem from '@/components/BillItem.vue'
+import { formatAmount } from '@/utils/formatting.js';
 
 export default {
   name: 'BillsList',
@@ -31,7 +43,7 @@ export default {
   },
   computed: {
     groupedBills() {
-      return this.bills.reduce((acc, bill) => {
+      return this.filteredBills.reduce((acc, bill) => {
         const monthYear = new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
         if (!acc[monthYear]) {
@@ -46,24 +58,81 @@ export default {
 
         return acc;
       }, {});
-    }    
+    },
+    filteredBills() {
+      const today = new Date();
+      switch (this.filter) {
+        case 'upcoming':
+          return this.bills.filter(bill => new Date(bill.dueDate) >= today);
+        case 'overdue':
+          return this.bills.filter(bill => new Date(bill.dueDate) < today && bill.status !== 'paid');
+        case 'recurring':
+          return this.bills.filter(bill => bill.recurring !== null); // or however you plan to denote recurring bills
+        case 'paid':
+          return this.bills.filter(bill => bill.status === 'paid');
+        default:
+          return this.bills;
+      }
+    },
+    hasOverdueBills() {
+      return this.bills.some(bill => new Date(bill.dueDate) < new Date() && bill.status !== 'paid');
+    }
   },
   methods: {
-    formatAmount(amount) {
-      return amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    formatAmount,
+    setFilter(filter) {
+      this.filter = filter;
     }
   },
   data() {
     return {
       bills: [
-        { id: 1, name: 'Electricity', dueDate: '2023-08-09T12:00:00Z', amount: 100.00 },
-        { id: 2, name: 'Water', dueDate: '2023-08-16T12:00:00Z', amount: 50.00 },
-        { id: 3, name: 'Internet', dueDate: '2023-08-19T12:00:00Z', amount: 80.00 },
-        { id: 1, name: 'Electricity', dueDate: '2023-09-09T12:00:00Z', amount: 100.00 },
-        { id: 2, name: 'Water', dueDate: '2023-09-16T12:00:00Z', amount: 50.00 },
-        { id: 3, name: 'Internet', dueDate: '2023-09-19T12:00:00Z', amount: 80.00 }
-      ]
+        { id: 1, name: 'Electricity', dueDate: '2023-08-01T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: null },
+        { id: 2, name: 'Water', dueDate: '2023-08-16T12:00:00Z', amount: 50.00, status: 'paid', recurring: null },
+        { id: 3, name: 'Internet', dueDate: '2023-08-19T12:00:00Z', amount: 80.00, status: 'upcoming', recurring: null },
+        { id: 1, name: 'Electricity', dueDate: '2023-09-09T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: null },
+        { id: 2, name: 'Water', dueDate: '2023-09-16T12:00:00Z', amount: 50.00, status: 'upcoming', recurring: null },
+        { id: 3, name: 'Internet', dueDate: '2023-09-19T12:00:00Z', amount: 80.00, status: 'upcoming', recurring: null }
+      ],
+      filter: 'upcoming'
     }
   }
 }
 </script>
+
+<style scoped>
+.nav-button {
+  margin-right: 12px;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.nav-button:last-child {
+  margin-right: 0;
+}
+
+.nav-button:hover {
+  color: #3182ce;
+}
+
+.active-filter {
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+.overdue-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-right: 12px;
+}
+
+.warning-symbol {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: red;
+  border-radius: 50%;
+  top: -10px;
+  right: -1px;
+}
+</style>
