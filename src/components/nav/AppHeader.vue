@@ -32,7 +32,7 @@ export default {
   },
   methods: {
     toggleMenu() {
-      this.$emit('toggle-menu');
+      this.$store.commit('toggleSidebar');
     }
   }
 }

@@ -3,6 +3,7 @@ import { createStore } from 'vuex';
 const store = createStore({
   state() {
     return {
+      isSidebarOpen: false,
       bills: [
         { id: 1, name: 'Electricity', dueDate: '2023-08-01T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: null },
         { id: 2, name: 'Water', dueDate: '2023-08-16T12:00:00Z', amount: 50.00, status: 'paid', recurring: null },
@@ -13,6 +14,11 @@ const store = createStore({
       ]
     };
   }, 
+  mutations: {
+    toggleSidebar(state) {      
+      state.isSidebarOpen = !state.isSidebarOpen;
+    }
+  },
   getters: {
     upcomingBills(state) {
       return state.bills.filter(bill => bill.status === 'upcoming');

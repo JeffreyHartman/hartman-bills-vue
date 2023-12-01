@@ -1,6 +1,7 @@
 <template>
   <div class="dark:bg-black dark:text-white min-h-screen mx-auto">
     <app-header></app-header>
+    <side-bar v-if="$store.state.isSidebarOpen"></side-bar>
     <router-view/>  
     <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
       Dark Mode toggle!
@@ -9,12 +10,25 @@
 </template>
 
 <script>
-import AppHeader from '@/components/AppHeader.vue'
+import { ref } from 'vue'
+import AppHeader from '@/components/nav/AppHeader.vue'
+import SideBar from '@/components/nav/SideBar.vue'
 
 export default {
   name: 'App',
   components: {
-    AppHeader
+    AppHeader,
+    SideBar
+  },
+  setup() {
+    const isDrawerOpen = ref(false);
+
+    return {
+      isDrawerOpen,
+      toggleDrawer() {
+        isDrawerOpen.value = !isDrawerOpen.value;
+      }
+    }
   },
   data() {
     return {
