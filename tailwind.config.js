@@ -4,7 +4,11 @@ module.exports = {
   darkMode: 'class', // or 'media' or 'class' or 'false'
   content: [],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'alice-blue': '#F0F8FF',
+      }
+    },
   },
   plugins: [],
 }
