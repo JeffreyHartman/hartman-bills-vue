@@ -1,5 +1,5 @@
 <template>
-  <div class="dark:bg-black dark:text-white min-h-screen">
+  <div class="dark:bg-black dark:text-white min-h-screen mx-auto">
     <app-header></app-header>
     <router-view/>  
     <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">

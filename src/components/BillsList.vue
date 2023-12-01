@@ -23,6 +23,7 @@
           <bill-item          
             :bill="bill"
             class="bg-white dark:bg-black px-8 pt-1"
+            @click="viewBillDetail(bill.id)"
           >        
           </bill-item>
           <hr class="dark:border-gray-700"/>
@@ -34,6 +35,8 @@
 
 <script>
 import BillItem from '@/components/BillItem.vue'
+import { useRouter } from 'vue-router';
+import { mapState } from 'vuex';
 import { formatAmount } from '@/utils/formatting.js';
 
 export default {
@@ -41,7 +44,19 @@ export default {
   components: {
     'bill-item': BillItem
   },
+  setup() {
+    const router = useRouter();
+
+    function viewBillDetail(id) {
+      router.push(`/bill/${id}`);
+    }
+
+    return {
+      viewBillDetail
+    }
+  },
   computed: {
+    ...mapState(['bills']),
     groupedBills() {
       return this.filteredBills.reduce((acc, bill) => {
         const monthYear = new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -85,15 +100,7 @@ export default {
     }
   },
   data() {
-    return {
-      bills: [
-        { id: 1, name: 'Electricity', dueDate: '2023-08-01T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: null },
-        { id: 2, name: 'Water', dueDate: '2023-08-16T12:00:00Z', amount: 50.00, status: 'paid', recurring: null },
-        { id: 3, name: 'Internet', dueDate: '2023-08-19T12:00:00Z', amount: 80.00, status: 'upcoming', recurring: null },
-        { id: 1, name: 'Electricity', dueDate: '2023-09-09T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: null },
-        { id: 2, name: 'Water', dueDate: '2023-09-16T12:00:00Z', amount: 50.00, status: 'upcoming', recurring: null },
-        { id: 3, name: 'Internet', dueDate: '2023-09-19T12:00:00Z', amount: 80.00, status: 'upcoming', recurring: null }
-      ],
+    return {      
       filter: 'upcoming'
     }
   }
