@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto max-w-md dark:bg-black dark:text-white">
+  <div class="container mx-auto dark:bg-black dark:text-white">
     <!-- Bills navigation -->
     <div class="navbar p-4 bg-gray-200 dark:bg-gray-800 mb-4 rounded-md text-sm">
         <button :class="{ 'active-filter': filter === 'upcoming' }" @click="setFilter('upcoming')" class="nav-button">UPCOMING</button>
@@ -23,19 +23,17 @@
           <bill-item          
             :bill="bill"
             class="bg-white dark:bg-black px-8 pt-1"
-            @click="viewBillDetail(bill.id)"
-          >        
+          >
           </bill-item>
           <hr class="dark:border-gray-700"/>
-        </div>        
-      </div>      
+        </div> 
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import BillItem from '@/components/BillItem.vue'
-import { useRouter } from 'vue-router';
 import { mapState } from 'vuex';
 import { formatAmount } from '@/utils/formatting.js';
 
@@ -43,17 +41,6 @@ export default {
   name: 'BillsList',
   components: {
     'bill-item': BillItem
-  },
-  setup() {
-    const router = useRouter();
-
-    function viewBillDetail(id) {
-      router.push(`/bill/${id}`);
-    }
-
-    return {
-      viewBillDetail
-    }
   },
   computed: {
     ...mapState(['bills']),

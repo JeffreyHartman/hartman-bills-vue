@@ -18,7 +18,7 @@ const routes = [
   },
   {
     path: '/bill/:id',
-    name: 'bill',
+    name: 'bill-details',
     component: BillDetailsView
   }
 ]

@@ -1,13 +1,15 @@
 <template>
-  <div class="bill-item flex justify-between mb-4">
-    <div class="text-left">
-      <div class="mb-2 text-sm">{{ bill.name }}</div>
-      <div class="text-gray-400 text-xs">{{ formatDate(bill.dueDate) }} > {{ daysUntilDue(bill.dueDate) }} days</div>
-    </div>    
-    <div class="text-gray-700 dark:text-white text-right">      
-      <div>{{ formatAmount(bill.amount) }}</div>
+  <router-link :to="{ name: 'bill-details', params: { id: bill.id } }">
+    <div class="bill-item flex justify-between mb-4">
+      <div class="text-left">
+        <div class="mb-2 text-sm">{{ bill.name }}</div>
+        <div class="text-gray-400 text-xs">{{ formatDate(bill.dueDate) }} > {{ daysUntilDue(bill.dueDate) }} days</div>
+      </div>    
+      <div class="text-gray-700 dark:text-white text-right">      
+        <div>{{ formatAmount(bill.amount) }}</div>
+      </div>
     </div>
-  </div>
+  </router-link>
 </template>
 
 <script>

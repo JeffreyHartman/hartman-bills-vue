@@ -1,5 +1,5 @@
 <template>
-  <div class="dark:bg-black dark:text-white min-h-screen mx-auto">
+  <div class="dark:bg-black dark:text-white min-h-screen mx-auto max-w-6xl">
     <app-header></app-header>
     <side-bar v-if="$store.state.isSidebarOpen"></side-bar>
     <router-view/>  
