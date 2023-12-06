@@ -5,7 +5,7 @@ const store = createStore({
     return {
       isSidebarOpen: false,
       bills: [
-        { id: 1, name: 'Electricity', dueDate: '2023-08-01T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: null },
+        { id: 1, name: 'Electricity', dueDate: '2023-08-01T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: true },
         { id: 2, name: 'Water', dueDate: '2023-08-16T12:00:00Z', amount: 50.00, status: 'paid', recurring: null },
         { id: 3, name: 'Internet', dueDate: '2023-08-19T12:00:00Z', amount: 80.00, status: 'upcoming', recurring: null },
         { id: 1, name: 'Electricity', dueDate: '2023-09-09T12:00:00Z', amount: 100.00, status: 'upcoming', recurring: null },

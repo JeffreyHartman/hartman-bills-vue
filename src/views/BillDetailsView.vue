@@ -1,13 +1,17 @@
 <template>
   <div>
-    <h1>Bill Details</h1>
-    <p>Bill ID: {{ bill.id }}</p>
-    <!-- Add more details here -->
+    <h1>{{ bill.name }}</h1>
+    <hr />
+    <p>{{ formatAmount(bill.amount) }}</p>
+    <p>By {{ formatDate(bill.dueDate) }}</p>
+    <p>Recurring: {{ bill.recurring }}</p>
+    <button>Mark Paid</button>
   </div>
 </template>
 
 <script>
 import { mapState } from 'vuex';
+import { formatDate, formatAmount } from '@/utils/formatting.js';
 
 export default {
   computed: {
@@ -21,6 +25,10 @@ export default {
     const id = this.$route.params.id;
     console.log(id);
   },
+  methods: {
+    formatDate,
+    formatAmount
+  }
 }
 </script>
 
