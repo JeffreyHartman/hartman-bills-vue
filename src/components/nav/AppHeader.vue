@@ -53,6 +53,9 @@ export default {
   methods: {
     toggleMenu() {
       this.$store.commit('toggleSidebar');
+    },
+    editBill() {
+      this.$router.push({ name: 'bill-edit', params: { id: this.$route.params.id } });
     }
   }
 }

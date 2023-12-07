@@ -2,13 +2,13 @@
   <div class="container mx-auto dark:bg-black dark:text-white">
     <!-- Bills navigation -->
     <div class="navbar p-4 bg-gray-200 dark:bg-gray-800 mb-4 rounded-md text-sm">
-        <button :class="{ 'active-filter': filter === 'upcoming' }" @click="setFilter('upcoming')" class="nav-button">UPCOMING</button>
+        <button :class="{ 'active-filter': currentTab === 'upcoming' }" @click="setCurrentTab('upcoming')" class="nav-button">UPCOMING</button>
         <div class="overdue-wrapper">
           <div v-if="hasOverdueBills" class="warning-symbol"></div>
-          <button :class="{ 'active-filter': filter === 'overdue' }" @click="setFilter('overdue')" class="nav-button">OVERDUE</button>
+          <button :class="{ 'active-filter': currentTab === 'overdue' }" @click="setCurrentTab('overdue')" class="nav-button">OVERDUE</button>
         </div>
-        <button :class="{ 'active-filter': filter === 'recurring' }" @click="setFilter('recurring')" class="nav-button">RECURRING</button>
-        <button :class="{ 'active-filter': filter === 'paid' }" @click="setFilter('paid')" class="nav-button">PAID</button>
+        <button :class="{ 'active-filter': currentTab === 'recurring' }" @click="setCurrentTab('recurring')" class="nav-button">RECURRING</button>
+        <button :class="{ 'active-filter': currentTab === 'paid' }" @click="setCurrentTab('paid')" class="nav-button">PAID</button>
     </div>
 
     <div class="bills-list">
@@ -34,7 +34,7 @@
 
 <script>
 import BillItem from '@/components/BillItem.vue'
-import { mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 import { formatAmount } from '@/utils/formatting.js';
 
 export default {
@@ -43,7 +43,12 @@ export default {
     'bill-item': BillItem
   },
   computed: {
-    ...mapState(['bills']),
+    ...mapGetters([
+      'upcomingBills',
+      'overdueBills',
+      'recurringBills',
+      'paidBills'
+    ]),
     groupedBills() {
       return this.filteredBills.reduce((acc, bill) => {
         const monthYear = new Date(bill.dueDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -62,33 +67,32 @@ export default {
       }, {});
     },
     filteredBills() {
-      const today = new Date();
-      switch (this.filter) {
+      switch (this.currentTab) {
         case 'upcoming':
-          return this.bills.filter(bill => new Date(bill.dueDate) >= today);
+          return this.upcomingBills;
         case 'overdue':
-          return this.bills.filter(bill => new Date(bill.dueDate) < today && bill.status !== 'paid');
+          return this.overdueBills;
         case 'recurring':
-          return this.bills.filter(bill => bill.recurring !== null); // or however you plan to denote recurring bills
+          return this.recurringBills;
         case 'paid':
-          return this.bills.filter(bill => bill.status === 'paid');
+          return this.paidBills;
         default:
-          return this.bills;
+          return [];
       }
     },
     hasOverdueBills() {
-      return this.bills.some(bill => new Date(bill.dueDate) < new Date() && bill.status !== 'paid');
+      return this.overdueBills.length > 0;
     }
   },
   methods: {
     formatAmount,
-    setFilter(filter) {
-      this.filter = filter;
+    setCurrentTab(tab) {
+      this.currentTab = tab;
     }
   },
   data() {
-    return {      
-      filter: 'upcoming'
+    return {
+      currentTab: 'upcoming'
     }
   }
 }

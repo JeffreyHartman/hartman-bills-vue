@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import BillsView from '../views/BillsView.vue'
 import BillDetailsView from '../views/BillDetailsView.vue'
+import EditBillView from '../views/EditBillView.vue'
 
 const routes = [
   {
@@ -20,6 +21,11 @@ const routes = [
     path: '/bill/:id',
     name: 'bill-details',
     component: BillDetailsView
+  },
+  {
+    path: '/bill/:id/edit',
+    name: 'bill-edit',
+    component: EditBillView
   }
 ]
 
