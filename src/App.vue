@@ -1,72 +1,50 @@
 <template>
-  <div class="dark:bg-black dark:text-white min-h-screen mx-auto max-w-6xl">
-    <app-header></app-header>
-    <side-bar v-if="$store.state.isSidebarOpen"></side-bar>
-    <router-view/>  
-    <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
-      Dark Mode toggle!
-    </button>
+  <div class="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-200">
+    <app-header />
+    <main class="max-w-2xl mx-auto px-4 pb-24">
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
+
+    <!-- FAB: Add Bill -->
+    <router-link
+      v-if="$route.name === 'bills'"
+      :to="{ name: 'bill-add' }"
+      class="fixed bottom-6 right-6 w-14 h-14 bg-accent hover:bg-accent-light text-white
+             rounded-2xl shadow-elevated hover:shadow-lg flex items-center justify-center
+             transition-all duration-200 active:scale-95 z-40"
+      aria-label="Add new bill"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+    </router-link>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
-import AppHeader from '@/components/nav/AppHeader.vue'
-import SideBar from '@/components/nav/SideBar.vue'
+import AppHeader from '@/components/nav/AppHeader.vue';
 
 export default {
   name: 'App',
-  components: {
-    AppHeader,
-    SideBar
-  },
-  setup() {
-    const isDrawerOpen = ref(false);
-
-    return {
-      isDrawerOpen,
-      toggleDrawer() {
-        isDrawerOpen.value = !isDrawerOpen.value;
-      }
-    }
-  },
-  data() {
-    return {
-      isDebouncing: false
-    }
-  },
-  methods: {
-    toggleDarkMode() {
-      if (this.isDebouncing) return;
-      this.isDebouncing = true;
-      setTimeout(() => {
-        document.body.classList.toggle('dark')
-        this.isDebouncing = false;
-      }, 300);
-    }
-  }
-}
+  components: { AppHeader }
+};
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
-
-nav {
-  padding: 30px;
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
 }
-
-nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-nav a.router-link-exact-active {
-  color: #42b983;
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

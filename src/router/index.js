@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import BillsView from '../views/BillsView.vue'
-import BillDetailsView from '../views/BillDetailsView.vue'
-import EditBillView from '../views/EditBillView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import BillsView from '../views/BillsView.vue';
+import BillDetailsView from '../views/BillDetailsView.vue';
+import EditBillView from '../views/EditBillView.vue';
 
 const routes = [
   {
@@ -10,12 +10,9 @@ const routes = [
     component: BillsView
   },
   {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
+    path: '/bill/new',
+    name: 'bill-add',
+    component: EditBillView
   },
   {
     path: '/bill/:id',
@@ -27,11 +24,11 @@ const routes = [
     name: 'bill-edit',
     component: EditBillView
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
-})
+});
 
-export default router
+export default router;

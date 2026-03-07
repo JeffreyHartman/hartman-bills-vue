@@ -1,51 +1,160 @@
 <template>
-  <div class="max-w-md mx-auto overflow-hidden m-3 p-6 space-y-2">
-    <h1 class="text-2xl font-bold mb-2">{{ bill.name }}</h1>
-    <hr class="mb-2"/>
-    <p class="text-gray-700 text-xl font-bold"> {{ formatAmount(bill.amount) }}</p>
-    <p class="text-gray-400 font-bold">By {{ formatDate(bill.dueDate) }}</p>
-    <p class="inline-flex items-center bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span :style="{ color: daysUntilDue.includes('past') ? 'red' : 'inherit' }">{{ daysUntilDue }}</span>
-    </p>
-    <p class="text-gray-700"><strong class="font-semibold">Status:</strong> {{ bill.status }}</p>
-    <p class="text-gray-700"><strong class="font-semibold">Recurring:</strong> {{ bill.recurring ? 'Yes' : 'No' }}</p>
-    <button class="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Mark Paid</button>
+  <div v-if="bill" class="pt-6 space-y-4">
+    <!-- Status badge & amount -->
+    <div class="card p-6">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-semibold">{{ bill.name }}</h2>
+          <span
+            class="inline-block mt-1 text-xs font-medium px-2.5 py-1 rounded-lg"
+            :class="statusBadgeClass"
+          >{{ statusLabel }}</span>
+        </div>
+        <p class="text-2xl font-mono font-bold" :class="isPaid ? 'text-surface-400 line-through' : ''">
+          {{ formatAmount(bill.amount) }}
+        </p>
+      </div>
+
+      <!-- Details -->
+      <dl class="space-y-3 text-sm">
+        <div class="flex justify-between">
+          <dt class="text-surface-400 dark:text-surface-500">Due Date</dt>
+          <dd class="font-medium">{{ formatDateLong(displayDueDate) }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-surface-400 dark:text-surface-500">Days Until Due</dt>
+          <dd class="font-medium" :class="dueTextClass">{{ dueLabel }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-surface-400 dark:text-surface-500">Frequency</dt>
+          <dd class="font-medium">{{ recurringLabel(bill.recurring) }}</dd>
+        </div>
+        <div v-if="bill.paidDates.length > 0" class="flex justify-between">
+          <dt class="text-surface-400 dark:text-surface-500">Times Paid</dt>
+          <dd class="font-medium">{{ bill.paidDates.length }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-3">
+      <button
+        v-if="!isPaid"
+        @click="markAsPaid"
+        class="btn-success flex-1 flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+        Mark Paid
+      </button>
+      <button
+        v-else
+        @click="markAsUnpaid"
+        class="btn-secondary flex-1 flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+        </svg>
+        Mark Unpaid
+      </button>
+
+      <router-link
+        :to="{ name: 'bill-edit', params: { id: bill.id } }"
+        class="btn-secondary flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+        </svg>
+        Edit
+      </router-link>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="pt-2">
+      <button
+        @click="confirmDelete"
+        class="w-full text-sm text-status-overdue hover:text-red-700 dark:hover:text-red-400 py-2 transition-colors"
+      >
+        Delete this bill
+      </button>
+    </div>
+  </div>
+
+  <div v-else class="pt-20 text-center">
+    <p class="text-surface-400">Bill not found</p>
+    <router-link to="/" class="text-accent text-sm mt-2 inline-block">Back to bills</router-link>
   </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
-import { formatDate, formatAmount } from '@/utils/formatting.js';
+import { mapGetters } from 'vuex';
+import { formatAmount, formatDateLong, daysUntilDue, daysUntilDueLabel, billStatus, recurringLabel } from '@/utils/formatting.js';
 
 export default {
+  name: 'BillDetailsView',
   computed: {
-    ...mapState(['bills']),
+    ...mapGetters(['billById']),
     bill() {
       const id = parseInt(this.$route.params.id);
-      return this.bills.find(bill => bill.id === id);
+      return this.billById(id);
     },
-    daysUntilDue() {
-      const dueDate = new Date(this.bill.dueDate);
-      const today = new Date();
-      const diffTime = dueDate - today;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays >= 0 ? `${diffDays} days until due` : `${Math.abs(diffDays)} days past due`;
+    displayDueDate() {
+      if (this.$route.query.due) return this.$route.query.due;
+      return this.bill.dueDate || this.bill.creationDate;
+    },
+    isPaid() {
+      if (!this.bill) return false;
+      const dueDate = this.displayDueDate;
+      return this.bill.paidDates.some(pd => {
+        const d1 = new Date(pd);
+        const d2 = new Date(dueDate);
+        return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+      });
+    },
+    status() {
+      return billStatus(this.displayDueDate, this.isPaid);
+    },
+    statusLabel() {
+      const labels = { paid: 'Paid', overdue: 'Overdue', warning: 'Due Soon', upcoming: 'Upcoming' };
+      return labels[this.status];
+    },
+    statusBadgeClass() {
+      const classes = {
+        paid: 'bg-status-paid-light dark:bg-status-paid-dark/40 text-status-paid',
+        overdue: 'bg-status-overdue-light dark:bg-status-overdue-dark/40 text-status-overdue',
+        warning: 'bg-status-warning-light dark:bg-status-warning-dark/40 text-status-warning',
+        upcoming: 'bg-accent/10 text-accent',
+      };
+      return classes[this.status];
+    },
+    dueLabel() {
+      return daysUntilDueLabel(this.displayDueDate);
+    },
+    dueTextClass() {
+      if (this.isPaid) return 'text-status-paid';
+      const days = daysUntilDue(this.displayDueDate);
+      if (days < 0) return 'text-status-overdue';
+      if (days <= 3) return 'text-status-warning';
+      return '';
     }
   },
-  created() {
-    const id = this.$route.params.id;
-    console.log(id);
-  },
   methods: {
-    formatDate,
-    formatAmount
+    formatAmount,
+    formatDateLong,
+    recurringLabel,
+    markAsPaid() {
+      this.$store.commit('markPaid', { billId: this.bill.id, date: this.displayDueDate });
+    },
+    markAsUnpaid() {
+      this.$store.commit('markUnpaid', { billId: this.bill.id, date: this.displayDueDate });
+    },
+    confirmDelete() {
+      if (window.confirm(`Delete "${this.bill.name}"? This cannot be undone.`)) {
+        this.$store.commit('deleteBill', this.bill.id);
+        this.$router.push('/');
+      }
+    }
   }
-}
+};
 </script>
-
-<style scoped>
-/* Add your component styles here */
-</style>
