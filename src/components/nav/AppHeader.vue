@@ -1,62 +1,67 @@
 <template>
-  <div class="h-16 bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
-    <div class="flex items-center">
-      <!-- Left content (back arrow or hamburger) -->
-      <span v-if="route.path.includes('/bill/')" @click="goBack" class="cursor-pointer text-2xl mr-2">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-          <path fill-rule="evenodd" d="M11.03 3.97a.75.75 0 010 1.06l-6.22 6.22H21a.75.75 0 010 1.5H4.81l6.22 6.22a.75.75 0 11-1.06 1.06l-7.5-7.5a.75.75 0 010-1.06l7.5-7.5a.75.75 0 011.06 0z" clip-rule="evenodd" />
-        </svg>
-      </span>
-      <span v-else @click="toggleMenu" class="cursor-pointer text-2xl mr-2">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-          <path fill-rule="evenodd" d="M3 6.75A.75.75 0 013.75 6h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 6.75zM3 12a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 12zm0 5.25a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
-        </svg>
-      </span>
+  <header class="sticky top-0 z-30 bg-white/80 dark:bg-surface-950/80 backdrop-blur-lg border-b border-surface-100 dark:border-surface-800">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <!-- Left: Back or Title -->
+      <div class="flex items-center gap-3">
+        <button
+          v-if="showBack"
+          @click="goBack"
+          class="p-1.5 -ml-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          aria-label="Go back"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <h1 class="text-lg font-semibold tracking-tight">{{ pageTitle }}</h1>
+      </div>
 
-      <!-- Page Title -->
-      <span class="text-xl font-bold" v-if="route.path.includes('/bill/')">Details</span>
-      <span class="text-xl font-bold" v-else>Bills</span>
+      <!-- Right: Actions -->
+      <div class="flex items-center gap-1">
+        <button
+          @click="toggleDark"
+          class="p-2 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+          :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+        >
+          <svg v-if="!darkMode" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+          </svg>
+        </button>
+      </div>
     </div>
-
-    <div v-if="route.path.includes('/bill/')" class="flex items-center">
-      <!-- Right content (edit and delete buttons) -->
-      <button @click="editBill" class="p-2">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-          <path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z" />
-        </svg>
-      </button>
-      <button @click="deleteBill" class="p-2">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-          <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.07a3 3 0 01-2.991 2.77H8.084a3 3 0 01-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.196 51.196 0 013.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 00-6 0v-.113c0-.794.609-1.428 1.364-1.452zm-.355 5.945a.75.75 0 10-1.5.058l.347 9a.75.75 0 101.499-.058l-.346-9zm5.48.058a.75.75 0 10-1.498-.058l-.347 9a.75.75 0 001.5.058l.345-9z" clip-rule="evenodd" />
-        </svg>
-      </button>
-    </div>
-  </div>
-  
+  </header>
 </template>
 
 <script>
-import { useRoute, useRouter } from 'vue-router';
+import { mapState } from 'vuex';
 
 export default {
   name: 'AppHeader',
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-
-    const goBack = () => {
-      router.go(-1);
-    };
-
-    return { route, goBack };
+  computed: {
+    ...mapState(['darkMode']),
+    showBack() {
+      return this.$route.name !== 'bills';
+    },
+    pageTitle() {
+      const titles = {
+        'bills': 'Bills',
+        'bill-details': 'Details',
+        'bill-edit': 'Edit Bill',
+        'bill-add': 'New Bill',
+      };
+      return titles[this.$route.name] || 'Bills';
+    }
   },
   methods: {
-    toggleMenu() {
-      this.$store.commit('toggleSidebar');
+    goBack() {
+      this.$router.back();
     },
-    editBill() {
-      this.$router.push({ name: 'bill-edit', params: { id: this.$route.params.id } });
+    toggleDark() {
+      this.$store.commit('toggleDarkMode');
     }
   }
-}
+};
 </script>
