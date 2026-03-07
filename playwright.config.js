@@ -8,7 +8,7 @@ export default defineConfig({
     headless: true,
   },
   webServer: {
-    command: 'npx vue-cli-service serve --port 8090',
+    command: 'npx vite --port 8090',
     port: 8090,
     reuseExistingServer: false,
     timeout: 60000,

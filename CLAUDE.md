@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-- **Dev server:** `npm run serve` (Vue CLI hot-reload, default port 8080)
+- **Dev server:** `npm run dev` (Vite, default port 8080; `npm run serve` also works)
 - **Build:** `npm run build`
 - **Lint:** `npm run lint` (ESLint with vue3-essential + eslint:recommended; config in package.json)
 - **Unit tests:** `npm run test` (Vitest, config in vitest.config.js)
@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Vue 3 bills-tracking app using Options API, Vue Router 4, Vuex 4, and Tailwind CSS 3. Built with Vue CLI 5.
+Vue 3 bills-tracking app using Options API, Vue Router 4, Vuex 4, and Tailwind CSS 3. Built with Vite 6.
 
 ### State Management (Vuex)
 
