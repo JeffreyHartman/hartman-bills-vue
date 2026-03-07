@@ -45,8 +45,12 @@ function calculateDueDate(recurring, startDate) {
       dueDate.setDate(dueDate.getDate() + recurring.interval * 7);
       break;
     case 'month':
+      dueDate.setDate(1);
       dueDate.setMonth(dueDate.getMonth() + recurring.interval);
-      if (recurring.dayOfMonth) dueDate.setDate(recurring.dayOfMonth);
+      if (recurring.dayOfMonth) {
+        const lastDay = new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0).getDate();
+        dueDate.setDate(Math.min(recurring.dayOfMonth, lastDay));
+      }
       break;
     case 'year':
       dueDate = calculateYearlyDueDate(dueDate, recurring.dayOfYear, recurring.interval);
@@ -82,6 +86,7 @@ function incrementDate(recurring, startDate) {
       nextDate.setDate(nextDate.getDate() + recurring.interval * 7);
       break;
     case 'month':
+      nextDate.setDate(1);
       nextDate.setMonth(nextDate.getMonth() + recurring.interval);
       break;
     case 'year':

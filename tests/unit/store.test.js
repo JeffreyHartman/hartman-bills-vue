@@ -141,6 +141,24 @@ describe('Store - generateBillInstances (via imported functions)', () => {
     expect(instances.length).toBeLessThanOrEqual(14);
   });
 
+  it('handles end-of-month dates without drift for monthly bills', async () => {
+    const { calculateDueDate } = await import('@/store/index.js');
+    const recurring = { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 31, dayOfYear: null };
+    const jan31 = new Date(2026, 0, 31, 12, 0, 0);
+
+    const feb = calculateDueDate(recurring, jan31);
+    expect(feb.getMonth()).toBe(1); // February
+    expect(feb.getDate()).toBe(28); // clamped to last day
+
+    const mar = calculateDueDate(recurring, feb);
+    expect(mar.getMonth()).toBe(2); // March
+    expect(mar.getDate()).toBe(31); // back to 31
+
+    const apr = calculateDueDate(recurring, mar);
+    expect(apr.getMonth()).toBe(3); // April
+    expect(apr.getDate()).toBe(30); // clamped to 30
+  });
+
   it('marks instances as paid when matching paidDates exist', async () => {
     const { generateBillInstances } = await import('@/store/index.js');
     const dueDate = '2026-06-15T12:00:00Z';
