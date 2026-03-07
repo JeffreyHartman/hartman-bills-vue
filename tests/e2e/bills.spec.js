@@ -31,16 +31,15 @@ test.describe('Bills App', () => {
 
     // Mark as paid
     const markPaidBtn = page.getByRole('button', { name: 'Mark Paid' });
-    if (await markPaidBtn.isVisible()) {
-      await markPaidBtn.click();
+    await expect(markPaidBtn).toBeVisible();
+    await markPaidBtn.click();
 
-      // Should now show "Mark Unpaid"
-      await expect(page.getByRole('button', { name: 'Mark Unpaid' })).toBeVisible();
+    // Should now show "Mark Unpaid"
+    await expect(page.getByRole('button', { name: 'Mark Unpaid' })).toBeVisible();
 
-      // Mark unpaid
-      await page.getByRole('button', { name: 'Mark Unpaid' }).click();
-      await expect(page.getByRole('button', { name: 'Mark Paid' })).toBeVisible();
-    }
+    // Mark unpaid
+    await page.getByRole('button', { name: 'Mark Unpaid' }).click();
+    await expect(page.getByRole('button', { name: 'Mark Paid' })).toBeVisible();
   });
 
   test('can switch between tabs', async ({ page }) => {

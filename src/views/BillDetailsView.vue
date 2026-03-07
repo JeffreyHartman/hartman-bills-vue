@@ -96,11 +96,14 @@ export default {
   computed: {
     ...mapGetters(['billById']),
     bill() {
-      const id = parseInt(this.$route.params.id);
-      return this.billById(id);
+      const rawId = this.$route.params.id;
+      if (!/^\d+$/.test(rawId)) return undefined;
+      return this.billById(Number(rawId));
     },
     displayDueDate() {
-      if (this.$route.query.due) return this.$route.query.due;
+      if (!this.bill) return null;
+      const raw = this.$route.query.due;
+      if (raw) return this.parseCalendarDate(raw);
       return this.bill.dueDate || this.bill.creationDate;
     },
     isPaid() {
@@ -143,6 +146,14 @@ export default {
     formatAmount,
     formatDateLong,
     recurringLabel,
+    parseCalendarDate(value) {
+      if (!value) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      }
+      return new Date(value);
+    },
     markAsPaid() {
       this.$store.commit('markPaid', { billId: this.bill.id, date: this.displayDueDate });
     },

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createStore } from 'vuex';
+import { mutations } from '@/store/index.js';
 
-// We re-create a minimal store for testing to avoid side effects from the mock data dates
 function createTestStore(bills = []) {
   return createStore({
     state() {
@@ -11,48 +11,7 @@ function createTestStore(bills = []) {
         bills,
       };
     },
-    mutations: {
-      toggleSidebar(state) {
-        state.isSidebarOpen = !state.isSidebarOpen;
-      },
-      toggleDarkMode(state) {
-        state.darkMode = !state.darkMode;
-      },
-      addBill(state, bill) {
-        const maxId = state.bills.reduce((max, b) => Math.max(max, b.id), 0);
-        state.bills.push({ ...bill, id: maxId + 1, paidDates: [] });
-      },
-      updateBill(state, updatedBill) {
-        const index = state.bills.findIndex(b => b.id === updatedBill.id);
-        if (index !== -1) {
-          state.bills.splice(index, 1, { ...state.bills[index], ...updatedBill });
-        }
-      },
-      deleteBill(state, billId) {
-        state.bills = state.bills.filter(b => b.id !== billId);
-      },
-      markPaid(state, { billId, date }) {
-        const bill = state.bills.find(b => b.id === billId);
-        if (bill) {
-          const paidDateStr = new Date(date).toISOString();
-          if (!bill.paidDates.includes(paidDateStr)) {
-            bill.paidDates.push(paidDateStr);
-          }
-        }
-      },
-      markUnpaid(state, { billId, date }) {
-        const bill = state.bills.find(b => b.id === billId);
-        if (bill) {
-          const target = new Date(date);
-          bill.paidDates = bill.paidDates.filter(pd => {
-            const d = new Date(pd);
-            return !(d.getFullYear() === target.getFullYear() &&
-                     d.getMonth() === target.getMonth() &&
-                     d.getDate() === target.getDate());
-          });
-        }
-      },
-    },
+    mutations,
   });
 }
 
@@ -90,7 +49,7 @@ describe('Store mutations', () => {
     expect(store.state.isSidebarOpen).toBe(false);
   });
 
-  it('addBill adds a new bill with auto-generated id', () => {
+  it('addBill adds a new bill with auto-generated id and empty paidDates', () => {
     store.commit('addBill', {
       name: 'Internet',
       amount: 79.99,
@@ -101,7 +60,6 @@ describe('Store mutations', () => {
     expect(store.state.bills).toHaveLength(3);
     const newBill = store.state.bills[2];
     expect(newBill.name).toBe('Internet');
-    expect(newBill.id).toBe(3);
     expect(newBill.paidDates).toEqual([]);
   });
 
@@ -131,10 +89,9 @@ describe('Store mutations', () => {
     expect(store.state.bills[0].paidDates).toHaveLength(1);
   });
 
-  it('markPaid does not duplicate paid dates', () => {
-    const dueDate = '2026-03-15T12:00:00Z';
-    store.commit('markPaid', { billId: 1, date: dueDate });
-    store.commit('markPaid', { billId: 1, date: dueDate });
+  it('markPaid does not duplicate paid dates for the same calendar day', () => {
+    store.commit('markPaid', { billId: 1, date: '2026-03-15T12:00:00Z' });
+    store.commit('markPaid', { billId: 1, date: '2026-03-15T18:00:00Z' });
     expect(store.state.bills[0].paidDates).toHaveLength(1);
   });
 

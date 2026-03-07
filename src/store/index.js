@@ -92,6 +92,59 @@ function incrementDate(recurring, startDate) {
 
 let nextId = 100;
 
+const mutations = {
+  toggleSidebar(state) {
+    state.isSidebarOpen = !state.isSidebarOpen;
+  },
+  toggleDarkMode(state) {
+    state.darkMode = !state.darkMode;
+    if (state.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  },
+  addBill(state, bill) {
+    state.bills.push({ ...bill, id: nextId++, paidDates: [] });
+  },
+  updateBill(state, updatedBill) {
+    const index = state.bills.findIndex(b => b.id === updatedBill.id);
+    if (index !== -1) {
+      state.bills.splice(index, 1, { ...state.bills[index], ...updatedBill });
+    }
+  },
+  deleteBill(state, billId) {
+    state.bills = state.bills.filter(b => b.id !== billId);
+  },
+  markPaid(state, { billId, date }) {
+    const bill = state.bills.find(b => b.id === billId);
+    if (bill) {
+      const target = new Date(date);
+      const alreadyPaid = bill.paidDates.some(pd => {
+        const d = new Date(pd);
+        return d.getFullYear() === target.getFullYear() &&
+               d.getMonth() === target.getMonth() &&
+               d.getDate() === target.getDate();
+      });
+      if (!alreadyPaid) {
+        bill.paidDates.push(target.toISOString());
+      }
+    }
+  },
+  markUnpaid(state, { billId, date }) {
+    const bill = state.bills.find(b => b.id === billId);
+    if (bill) {
+      const target = new Date(date);
+      bill.paidDates = bill.paidDates.filter(pd => {
+        const d = new Date(pd);
+        return !(d.getFullYear() === target.getFullYear() &&
+                 d.getMonth() === target.getMonth() &&
+                 d.getDate() === target.getDate());
+      });
+    }
+  }
+};
+
 // Generate dates relative to today for realistic mock data
 function daysFromNow(days) {
   const d = new Date();
@@ -215,52 +268,7 @@ const store = createStore({
       ]
     };
   },
-  mutations: {
-    toggleSidebar(state) {
-      state.isSidebarOpen = !state.isSidebarOpen;
-    },
-    toggleDarkMode(state) {
-      state.darkMode = !state.darkMode;
-      if (state.darkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    },
-    addBill(state, bill) {
-      state.bills.push({ ...bill, id: nextId++, paidDates: [] });
-    },
-    updateBill(state, updatedBill) {
-      const index = state.bills.findIndex(b => b.id === updatedBill.id);
-      if (index !== -1) {
-        state.bills.splice(index, 1, { ...state.bills[index], ...updatedBill });
-      }
-    },
-    deleteBill(state, billId) {
-      state.bills = state.bills.filter(b => b.id !== billId);
-    },
-    markPaid(state, { billId, date }) {
-      const bill = state.bills.find(b => b.id === billId);
-      if (bill) {
-        const paidDateStr = new Date(date).toISOString();
-        if (!bill.paidDates.includes(paidDateStr)) {
-          bill.paidDates.push(paidDateStr);
-        }
-      }
-    },
-    markUnpaid(state, { billId, date }) {
-      const bill = state.bills.find(b => b.id === billId);
-      if (bill) {
-        const target = new Date(date);
-        bill.paidDates = bill.paidDates.filter(pd => {
-          const d = new Date(pd);
-          return !(d.getFullYear() === target.getFullYear() &&
-                   d.getMonth() === target.getMonth() &&
-                   d.getDate() === target.getDate());
-        });
-      }
-    }
-  },
+  mutations,
   getters: {
     allInstances(state) {
       return state.bills.flatMap(bill => generateBillInstances(bill));
@@ -312,4 +320,4 @@ const store = createStore({
 export default store;
 
 // Export for testing
-export { generateBillInstances, checkIfPaid, calculateDueDate, incrementDate };
+export { mutations, generateBillInstances, checkIfPaid, calculateDueDate, incrementDate };
