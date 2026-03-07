@@ -96,9 +96,7 @@ export default {
   computed: {
     ...mapGetters(['billById']),
     bill() {
-      const rawId = this.$route.params.id;
-      if (!/^\d+$/.test(rawId)) return undefined;
-      return this.billById(Number(rawId));
+      return this.billById(this.$route.params.id);
     },
     displayDueDate() {
       if (!this.bill) return null;
@@ -154,15 +152,15 @@ export default {
       }
       return new Date(value);
     },
-    markAsPaid() {
-      this.$store.commit('markPaid', { billId: this.bill.id, date: this.displayDueDate });
+    async markAsPaid() {
+      await this.$store.dispatch('markPaid', { billId: this.bill.id, date: this.displayDueDate });
     },
-    markAsUnpaid() {
-      this.$store.commit('markUnpaid', { billId: this.bill.id, date: this.displayDueDate });
+    async markAsUnpaid() {
+      await this.$store.dispatch('markUnpaid', { billId: this.bill.id, date: this.displayDueDate });
     },
-    confirmDelete() {
+    async confirmDelete() {
       if (window.confirm(`Delete "${this.bill.name}"? This cannot be undone.`)) {
-        this.$store.commit('deleteBill', this.bill.id);
+        await this.$store.dispatch('deleteBill', this.bill.id);
         this.$router.push('/');
       }
     }

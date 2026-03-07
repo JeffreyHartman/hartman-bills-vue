@@ -72,7 +72,7 @@ describe('SummaryStats', () => {
 
 describe('BillItem', () => {
   const futureBill = {
-    id: 1,
+    id: 'a1b2c3d4-0001-4000-8000-000000000001',
     name: 'Electric',
     amount: 142.50,
     dueDate: new Date(Date.now() + 10 * 86400000),
@@ -82,7 +82,7 @@ describe('BillItem', () => {
   };
 
   const paidBill = {
-    id: 2,
+    id: 'a1b2c3d4-0002-4000-8000-000000000002',
     name: 'Water',
     amount: 67.00,
     dueDate: new Date(Date.now() - 5 * 86400000),
@@ -141,6 +141,6 @@ describe('BillItem', () => {
     });
     const link = wrapper.find('a');
     expect(link.exists()).toBe(true);
-    expect(link.attributes('href')).toContain('/bill/1');
+    expect(link.attributes('href')).toContain('/bill/a1b2c3d4-0001-4000-8000-000000000001');
   });
 });

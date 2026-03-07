@@ -137,7 +137,7 @@ export default {
     },
     existingBill() {
       if (!this.isEditing) return null;
-      return this.billById(parseInt(this.$route.params.id));
+      return this.billById(this.$route.params.id);
     }
   },
   created() {
@@ -158,7 +158,7 @@ export default {
     }
   },
   methods: {
-    saveBill() {
+    async saveBill() {
       const billData = {
         name: this.form.name,
         amount: this.form.amount,
@@ -173,9 +173,9 @@ export default {
       };
 
       if (this.isEditing) {
-        this.$store.commit('updateBill', { id: this.existingBill.id, ...billData });
+        await this.$store.dispatch('updateBill', { id: this.existingBill.id, ...billData });
       } else {
-        this.$store.commit('addBill', { ...billData, creationDate: new Date().toISOString() });
+        await this.$store.dispatch('addBill', { ...billData, creationDate: new Date().toISOString() });
       }
       this.$router.push('/');
     }
