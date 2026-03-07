@@ -7,6 +7,7 @@ function generateBillInstances(bill) {
   oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
 
   if (!bill.recurring) {
+    if (!bill.dueDate) return instances;
     const dueDate = new Date(bill.dueDate);
     const isPaid = checkIfPaid(bill, dueDate);
     instances.push({

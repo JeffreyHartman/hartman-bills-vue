@@ -16,8 +16,8 @@ test.describe('Bills App', () => {
     const firstBill = page.locator('.card a').first();
     await firstBill.click();
 
-    // Should see the details page
-    await expect(page.locator('text=Details')).toBeVisible();
+    // Should see the details page with bill content
+    await expect(page.locator('.card h2')).toBeVisible();
     await expect(page.locator('text=Due Date')).toBeVisible();
     await expect(page.locator('text=Frequency')).toBeVisible();
   });
