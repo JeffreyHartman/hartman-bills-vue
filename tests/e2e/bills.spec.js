@@ -50,13 +50,12 @@ test.describe('Bills App', () => {
     await billLink.click();
 
     const markPaidBtn = page.getByRole('button', { name: 'Mark Paid' });
-    if (await markPaidBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await markPaidBtn.click();
-      await expect(page.getByRole('button', { name: 'Mark Unpaid' })).toBeVisible();
+    await expect(markPaidBtn).toBeVisible({ timeout: 5000 });
+    await markPaidBtn.click();
+    await expect(page.getByRole('button', { name: 'Mark Unpaid' })).toBeVisible();
 
-      await page.getByRole('button', { name: 'Mark Unpaid' }).click();
-      await expect(page.getByRole('button', { name: 'Mark Paid' })).toBeVisible();
-    }
+    await page.getByRole('button', { name: 'Mark Unpaid' }).click();
+    await expect(page.getByRole('button', { name: 'Mark Paid' })).toBeVisible();
   });
 
   test('can switch between tabs', async ({ page }) => {
@@ -112,9 +111,12 @@ test.describe('Bills App', () => {
     const fab = page.getByLabel('Add new bill');
     await fab.waitFor({ state: 'visible', timeout: 10000 });
     await fab.click();
+    const future = new Date();
+    future.setDate(future.getDate() + 30);
+    const futureDate = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}-${String(future.getDate()).padStart(2, '0')}`;
     await page.fill('#name', 'Bill To Delete');
     await page.fill('#amount', '1.00');
-    await page.fill('#dueDate', '2026-12-31');
+    await page.fill('#dueDate', futureDate);
     await page.getByRole('button', { name: 'Add Bill' }).click();
     await page.waitForURL(/.*(?<!new)$/, { timeout: 10000 });
     await waitForBillsPage(page);

@@ -53,6 +53,10 @@ export function recurringLabel(recurring) {
 
 // Format a Date as a local YYYY-MM-DD string (avoids UTC date shift from toISOString)
 export function toLocalDateString(date) {
+  // Short-circuit for YYYY-MM-DD strings to avoid UTC parse shifting the date
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return date;
+  }
   const d = new Date(date);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');

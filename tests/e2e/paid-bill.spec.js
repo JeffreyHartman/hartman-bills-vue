@@ -21,7 +21,7 @@ test.describe('Paid bill visibility', () => {
     // Set due date to 10 days from now
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 10);
-    const dateStr = futureDate.toISOString().split('T')[0];
+    const dateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
     await page.fill('#dueDate', dateStr);
     await page.getByRole('button', { name: 'Add Bill' }).click();
     await page.waitForURL(/.*(?<!new)$/, { timeout: 10000 });

@@ -77,6 +77,7 @@ export default {
         this.$router.push({ name: 'login' });
       } catch (err) {
         console.error('Logout failed:', err);
+        window.alert('Failed to sign out. Please try again.');
       }
     }
   }

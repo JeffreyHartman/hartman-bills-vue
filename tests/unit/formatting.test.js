@@ -159,9 +159,16 @@ describe('toLocalDateString', () => {
     expect(toLocalDateString(date)).toBe('2026-04-01');
   });
 
-  it('handles string input', () => {
+  it('handles ISO string input', () => {
     // Create a date string that represents April 1 at noon local
     const date = new Date(2026, 3, 1, 12, 0, 0);
     expect(toLocalDateString(date.toISOString())).toBe('2026-04-01');
+  });
+
+  it('short-circuits YYYY-MM-DD strings without UTC parse', () => {
+    // new Date('2026-04-01') parses as UTC midnight, which shifts to March 31
+    // in negative UTC offsets. The short-circuit avoids this.
+    expect(toLocalDateString('2026-04-01')).toBe('2026-04-01');
+    expect(toLocalDateString('2026-12-25')).toBe('2026-12-25');
   });
 });

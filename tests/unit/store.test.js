@@ -278,50 +278,25 @@ describe('Dark mode cookie persistence', () => {
 });
 
 describe('recurringBills getter - next due date', () => {
-  it('shows next upcoming due date for recurring bills, not null', () => {
-    // Create a store with a recurring bill
+  it('shows next upcoming due date for recurring bills, not null', async () => {
+    // Import the real store (with all production getters)
+    const storeModule = await import('@/store/index.js');
+    const store = storeModule.default;
+
     const now = new Date();
     const creationDate = new Date(now);
     creationDate.setMonth(creationDate.getMonth() - 2);
 
-    const store = createStore({
-      state() {
-        return {
-          bills: [{
-            id: 'recurring-1',
-            name: 'Monthly Bill',
-            creationDate: creationDate.toISOString(),
-            dueDate: null,
-            amount: 100,
-            recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 15, dayOfYear: null },
-            paidDates: [],
-          }],
-        };
-      },
-      mutations,
-      getters: {
-        allInstances(state) {
-          return state.bills.flatMap(bill => generateBillInstances(bill));
-        },
-        recurringBills(state, getters) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          return state.bills
-            .filter(b => b.recurring !== null)
-            .map(b => {
-              const instance = getters.allInstances
-                .filter(i => i.id === b.id && !i.isPaid && new Date(i.dueDate) >= today)
-                .sort((a, c) => new Date(a.dueDate) - new Date(c.dueDate))[0];
-              return {
-                ...b,
-                dueDate: instance ? instance.dueDate : b.creationDate,
-                isPaid: false,
-                instanceId: instance ? instance.instanceId : b.id,
-              };
-            });
-        },
-      },
-    });
+    // Seed the store with a recurring bill
+    store.commit('setBills', [{
+      id: 'recurring-1',
+      name: 'Monthly Bill',
+      creationDate: creationDate.toISOString(),
+      dueDate: null,
+      amount: 100,
+      recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 15, dayOfYear: null },
+      paidDates: [],
+    }]);
 
     const recurring = store.getters.recurringBills;
     expect(recurring).toHaveLength(1);
@@ -331,5 +306,8 @@ describe('recurringBills getter - next due date', () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     expect(dueDate >= today).toBe(true);
+
+    // Clean up
+    store.commit('setBills', []);
   });
 });

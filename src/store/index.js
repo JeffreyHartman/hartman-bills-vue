@@ -302,13 +302,17 @@ const actions = {
   },
 
   async logout({ commit }) {
+    let signOutError = null;
     try {
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Supabase signOut failed:', err);
+      signOutError = err;
     }
+    // Always clear local state so the user isn't stuck in a broken session
     commit('setUser', null);
     commit('setBills', []);
+    if (signOutError) throw signOutError;
   }
 };
 
