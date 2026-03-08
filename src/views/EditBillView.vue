@@ -105,8 +105,10 @@
 
       <!-- Actions -->
       <div class="flex gap-3">
-        <button type="button" @click="$router.back()" class="btn-secondary flex-1">Cancel</button>
-        <button type="submit" class="btn-primary flex-1">{{ isEditing ? 'Save Changes' : 'Add Bill' }}</button>
+        <button type="button" @click="$router.back()" class="btn-secondary flex-1" :disabled="isSaving">Cancel</button>
+        <button type="submit" class="btn-primary flex-1" :disabled="isSaving">
+          {{ isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Bill') }}
+        </button>
       </div>
     </form>
   </div>
@@ -119,6 +121,7 @@ export default {
   name: 'EditBillView',
   data() {
     return {
+      isSaving: false,
       form: {
         name: '',
         amount: null,
@@ -137,7 +140,7 @@ export default {
     },
     existingBill() {
       if (!this.isEditing) return null;
-      return this.billById(parseInt(this.$route.params.id));
+      return this.billById(this.$route.params.id);
     }
   },
   created() {
@@ -158,7 +161,11 @@ export default {
     }
   },
   methods: {
-    saveBill() {
+    async saveBill() {
+      if (this.isSaving) return;
+      if (this.isEditing && !this.existingBill) return;
+      this.isSaving = true;
+
       const billData = {
         name: this.form.name,
         amount: this.form.amount,
@@ -172,12 +179,22 @@ export default {
         dueDate: this.form.isRecurring ? null : new Date(this.form.dueDate + 'T12:00:00').toISOString(),
       };
 
-      if (this.isEditing) {
-        this.$store.commit('updateBill', { id: this.existingBill.id, ...billData });
-      } else {
-        this.$store.commit('addBill', { ...billData, creationDate: new Date().toISOString() });
+      try {
+        if (this.isEditing) {
+          await this.$store.dispatch('updateBill', {
+            id: this.existingBill.id,
+            paidDates: this.existingBill.paidDates,
+            ...billData,
+          });
+        } else {
+          await this.$store.dispatch('addBill', { ...billData, creationDate: new Date().toISOString() });
+        }
+        this.$router.push('/');
+      } catch {
+        window.alert('Failed to save bill. Please try again.');
+      } finally {
+        this.isSaving = false;
       }
-      this.$router.push('/');
     }
   }
 };

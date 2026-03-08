@@ -1,4 +1,5 @@
 import { createStore } from 'vuex';
+import { supabase } from '@/lib/supabase.js';
 
 function generateBillInstances(bill) {
   const instances = [];
@@ -96,7 +97,32 @@ function incrementDate(recurring, startDate) {
   return nextDate;
 }
 
-let nextId = 100;
+// Map Supabase row (snake_case) to app format (camelCase)
+function mapBillFromDb(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    creationDate: row.creation_date,
+    dueDate: row.due_date,
+    amount: Number(row.amount),
+    recurring: row.recurring,
+    paidDates: row.paid_dates || [],
+  };
+}
+
+// Map app format to Supabase row for insert/update
+function mapBillToDb(bill, userId) {
+  const row = {
+    name: bill.name,
+    amount: bill.amount,
+    recurring: bill.recurring || null,
+    paid_dates: bill.paidDates || [],
+  };
+  if (bill.creationDate !== undefined) row.creation_date = bill.creationDate;
+  if (bill.dueDate !== undefined) row.due_date = bill.dueDate;
+  if (userId) row.user_id = userId;
+  return row;
+}
 
 const mutations = {
   toggleSidebar(state) {
@@ -110,8 +136,14 @@ const mutations = {
       document.documentElement.classList.remove('dark');
     }
   },
+  setUser(state, user) {
+    state.user = user;
+  },
+  setBills(state, bills) {
+    state.bills = bills;
+  },
   addBill(state, bill) {
-    state.bills.push({ ...bill, id: nextId++, paidDates: [] });
+    state.bills.push(bill);
   },
   updateBill(state, updatedBill) {
     const index = state.bills.findIndex(b => b.id === updatedBill.id);
@@ -151,130 +183,113 @@ const mutations = {
   }
 };
 
-// Generate dates relative to today for realistic mock data
-function daysFromNow(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  d.setHours(12, 0, 0, 0);
-  return d.toISOString();
-}
+const actions = {
+  async fetchBills({ commit }) {
+    const { data, error } = await supabase
+      .from('bills')
+      .select('*')
+      .order('created_at', { ascending: true });
 
-function monthsAgo(months) {
-  const d = new Date();
-  d.setMonth(d.getMonth() - months);
-  d.setHours(12, 0, 0, 0);
-  return d.toISOString();
-}
+    if (error) throw error;
+    commit('setBills', data.map(mapBillFromDb));
+  },
+
+  async addBill({ commit, state }, billData) {
+    const row = mapBillToDb(billData, state.user?.id);
+    const { data, error } = await supabase
+      .from('bills')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) throw error;
+    commit('addBill', mapBillFromDb(data));
+  },
+
+  async updateBill({ commit }, updatedBill) {
+    const row = mapBillToDb(updatedBill);
+    const { data, error } = await supabase
+      .from('bills')
+      .update(row)
+      .eq('id', updatedBill.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    commit('updateBill', mapBillFromDb(data));
+  },
+
+  async deleteBill({ commit }, billId) {
+    const { error } = await supabase
+      .from('bills')
+      .delete()
+      .eq('id', billId);
+
+    if (error) throw error;
+    commit('deleteBill', billId);
+  },
+
+  async markPaid({ commit, state }, { billId, date }) {
+    const bill = state.bills.find(b => b.id === billId);
+    if (!bill) return;
+
+    const target = new Date(date);
+    const alreadyPaid = bill.paidDates.some(pd => {
+      const d = new Date(pd);
+      return d.getFullYear() === target.getFullYear() &&
+             d.getMonth() === target.getMonth() &&
+             d.getDate() === target.getDate();
+    });
+    if (alreadyPaid) return;
+
+    const newPaidDates = [...bill.paidDates, target.toISOString()];
+    const { error } = await supabase
+      .from('bills')
+      .update({ paid_dates: newPaidDates })
+      .eq('id', billId);
+
+    if (error) throw error;
+    commit('markPaid', { billId, date });
+  },
+
+  async markUnpaid({ commit, state }, { billId, date }) {
+    const bill = state.bills.find(b => b.id === billId);
+    if (!bill) return;
+
+    const target = new Date(date);
+    const newPaidDates = bill.paidDates.filter(pd => {
+      const d = new Date(pd);
+      return !(d.getFullYear() === target.getFullYear() &&
+               d.getMonth() === target.getMonth() &&
+               d.getDate() === target.getDate());
+    });
+    const { error } = await supabase
+      .from('bills')
+      .update({ paid_dates: newPaidDates })
+      .eq('id', billId);
+
+    if (error) throw error;
+    commit('markUnpaid', { billId, date });
+  },
+
+  async logout({ commit }) {
+    await supabase.auth.signOut();
+    commit('setUser', null);
+    commit('setBills', []);
+  }
+};
 
 const store = createStore({
   state() {
     return {
       isSidebarOpen: false,
       darkMode: false,
-      bills: [
-        {
-          id: 1,
-          name: 'Rent',
-          creationDate: monthsAgo(6),
-          dueDate: null,
-          amount: 1850.00,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 1, dayOfYear: null },
-          paidDates: [daysFromNow(-60), daysFromNow(-30)]
-        },
-        {
-          id: 2,
-          name: 'Electric',
-          creationDate: monthsAgo(6),
-          dueDate: null,
-          amount: 142.50,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 15, dayOfYear: null },
-          paidDates: [daysFromNow(-45), daysFromNow(-15)]
-        },
-        {
-          id: 3,
-          name: 'Water & Sewer',
-          creationDate: monthsAgo(6),
-          dueDate: null,
-          amount: 67.00,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 20, dayOfYear: null },
-          paidDates: [daysFromNow(-40)]
-        },
-        {
-          id: 4,
-          name: 'Internet',
-          creationDate: monthsAgo(6),
-          dueDate: null,
-          amount: 79.99,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 5, dayOfYear: null },
-          paidDates: [daysFromNow(-55), daysFromNow(-25)]
-        },
-        {
-          id: 5,
-          name: 'Car Insurance',
-          creationDate: monthsAgo(6),
-          dueDate: null,
-          amount: 215.00,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 10, dayOfYear: null },
-          paidDates: [daysFromNow(-50)]
-        },
-        {
-          id: 6,
-          name: 'Phone',
-          creationDate: monthsAgo(6),
-          dueDate: null,
-          amount: 85.00,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 22, dayOfYear: null },
-          paidDates: [daysFromNow(-38)]
-        },
-        {
-          id: 7,
-          name: 'Gym Membership',
-          creationDate: monthsAgo(3),
-          dueDate: null,
-          amount: 49.99,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 1, dayOfYear: null },
-          paidDates: [daysFromNow(-60), daysFromNow(-30)]
-        },
-        {
-          id: 8,
-          name: 'Netflix',
-          creationDate: monthsAgo(6),
-          dueDate: null,
-          amount: 15.99,
-          recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 8, dayOfYear: null },
-          paidDates: [daysFromNow(-52), daysFromNow(-22)]
-        },
-        {
-          id: 9,
-          name: 'Property Tax',
-          creationDate: monthsAgo(12),
-          dueDate: null,
-          amount: 2400.00,
-          recurring: { interval: 1, unit: 'year', dayOfWeek: null, dayOfMonth: null, dayOfYear: 90 },
-          paidDates: []
-        },
-        {
-          id: 10,
-          name: 'Car Repair',
-          creationDate: monthsAgo(1),
-          dueDate: daysFromNow(14),
-          amount: 450.00,
-          recurring: null,
-          paidDates: []
-        },
-        {
-          id: 11,
-          name: 'Dentist Visit',
-          creationDate: monthsAgo(1),
-          dueDate: daysFromNow(-5),
-          amount: 175.00,
-          recurring: null,
-          paidDates: []
-        }
-      ]
+      user: null,
+      bills: []
     };
   },
   mutations,
+  actions,
   getters: {
     allInstances(state) {
       return state.bills.flatMap(bill => generateBillInstances(bill));

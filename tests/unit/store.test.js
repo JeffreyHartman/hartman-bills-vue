@@ -8,6 +8,7 @@ function createTestStore(bills = []) {
       return {
         isSidebarOpen: false,
         darkMode: false,
+        user: null,
         bills,
       };
     },
@@ -21,7 +22,7 @@ describe('Store mutations', () => {
   beforeEach(() => {
     store = createTestStore([
       {
-        id: 1,
+        id: 'a1b2c3d4-0001-4000-8000-000000000001',
         name: 'Rent',
         creationDate: new Date().toISOString(),
         dueDate: null,
@@ -30,7 +31,7 @@ describe('Store mutations', () => {
         paidDates: [],
       },
       {
-        id: 2,
+        id: 'a1b2c3d4-0002-4000-8000-000000000002',
         name: 'Car Repair',
         creationDate: new Date().toISOString(),
         dueDate: new Date(Date.now() + 7 * 86400000).toISOString(),
@@ -49,13 +50,15 @@ describe('Store mutations', () => {
     expect(store.state.isSidebarOpen).toBe(false);
   });
 
-  it('addBill adds a new bill with auto-generated id and empty paidDates', () => {
+  it('addBill adds a new bill to state', () => {
     store.commit('addBill', {
+      id: 'a1b2c3d4-0003-4000-8000-000000000003',
       name: 'Internet',
       amount: 79.99,
       recurring: null,
       dueDate: new Date().toISOString(),
       creationDate: new Date().toISOString(),
+      paidDates: [],
     });
     expect(store.state.bills).toHaveLength(3);
     const newBill = store.state.bills[2];
@@ -64,8 +67,8 @@ describe('Store mutations', () => {
   });
 
   it('updateBill updates an existing bill', () => {
-    store.commit('updateBill', { id: 1, name: 'Monthly Rent', amount: 1600 });
-    const bill = store.state.bills.find(b => b.id === 1);
+    store.commit('updateBill', { id: 'a1b2c3d4-0001-4000-8000-000000000001', name: 'Monthly Rent', amount: 1600 });
+    const bill = store.state.bills.find(b => b.id === 'a1b2c3d4-0001-4000-8000-000000000001');
     expect(bill.name).toBe('Monthly Rent');
     expect(bill.amount).toBe(1600);
     // Other fields preserved
@@ -73,33 +76,33 @@ describe('Store mutations', () => {
   });
 
   it('updateBill does nothing for non-existent id', () => {
-    store.commit('updateBill', { id: 999, name: 'Ghost' });
+    store.commit('updateBill', { id: 'a1b2c3d4-9999-4000-8000-000000000099', name: 'Ghost' });
     expect(store.state.bills).toHaveLength(2);
   });
 
   it('deleteBill removes a bill by id', () => {
-    store.commit('deleteBill', 1);
+    store.commit('deleteBill', 'a1b2c3d4-0001-4000-8000-000000000001');
     expect(store.state.bills).toHaveLength(1);
-    expect(store.state.bills[0].id).toBe(2);
+    expect(store.state.bills[0].id).toBe('a1b2c3d4-0002-4000-8000-000000000002');
   });
 
   it('markPaid adds a paid date', () => {
     const dueDate = '2026-03-15T12:00:00Z';
-    store.commit('markPaid', { billId: 1, date: dueDate });
+    store.commit('markPaid', { billId: 'a1b2c3d4-0001-4000-8000-000000000001', date: dueDate });
     expect(store.state.bills[0].paidDates).toHaveLength(1);
   });
 
   it('markPaid does not duplicate paid dates for the same calendar day', () => {
-    store.commit('markPaid', { billId: 1, date: '2026-03-15T12:00:00Z' });
-    store.commit('markPaid', { billId: 1, date: '2026-03-15T18:00:00Z' });
+    store.commit('markPaid', { billId: 'a1b2c3d4-0001-4000-8000-000000000001', date: '2026-03-15T12:00:00Z' });
+    store.commit('markPaid', { billId: 'a1b2c3d4-0001-4000-8000-000000000001', date: '2026-03-15T18:00:00Z' });
     expect(store.state.bills[0].paidDates).toHaveLength(1);
   });
 
   it('markUnpaid removes the matching paid date', () => {
     const dueDate = '2026-03-15T12:00:00Z';
-    store.commit('markPaid', { billId: 1, date: dueDate });
+    store.commit('markPaid', { billId: 'a1b2c3d4-0001-4000-8000-000000000001', date: dueDate });
     expect(store.state.bills[0].paidDates).toHaveLength(1);
-    store.commit('markUnpaid', { billId: 1, date: dueDate });
+    store.commit('markUnpaid', { billId: 'a1b2c3d4-0001-4000-8000-000000000001', date: dueDate });
     expect(store.state.bills[0].paidDates).toHaveLength(0);
   });
 });
@@ -114,7 +117,7 @@ describe('Store - generateBillInstances (via imported functions)', () => {
   it('generates a single instance for non-recurring bills', async () => {
     const { generateBillInstances } = await import('@/store/index.js');
     const bill = {
-      id: 1,
+      id: 'a1b2c3d4-0001-4000-8000-000000000001',
       name: 'Test',
       dueDate: '2026-06-15T12:00:00Z',
       recurring: null,
@@ -128,7 +131,7 @@ describe('Store - generateBillInstances (via imported functions)', () => {
   it('generates multiple instances for recurring bills', async () => {
     const { generateBillInstances } = await import('@/store/index.js');
     const bill = {
-      id: 2,
+      id: 'a1b2c3d4-0002-4000-8000-000000000002',
       name: 'Monthly',
       creationDate: new Date().toISOString(),
       dueDate: null,
@@ -163,7 +166,7 @@ describe('Store - generateBillInstances (via imported functions)', () => {
     const { generateBillInstances } = await import('@/store/index.js');
     const dueDate = '2026-06-15T12:00:00Z';
     const bill = {
-      id: 3,
+      id: 'a1b2c3d4-0003-4000-8000-000000000003',
       name: 'Paid Bill',
       dueDate,
       recurring: null,

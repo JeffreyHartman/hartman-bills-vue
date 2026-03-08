@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-200">
-    <app-header />
-    <main class="max-w-2xl mx-auto px-4 pb-24">
+    <app-header v-if="isAuthenticated" />
+    <main :class="isAuthenticated ? 'max-w-2xl mx-auto px-4 pb-24' : ''">
       <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
           <component :is="Component" />
@@ -11,7 +11,7 @@
 
     <!-- FAB: Add Bill -->
     <router-link
-      v-if="$route.name === 'bills'"
+      v-if="isAuthenticated && $route.name === 'bills'"
       :to="{ name: 'bill-add' }"
       class="fixed bottom-6 right-6 w-14 h-14 bg-accent hover:bg-accent-light text-white
              rounded-2xl shadow-elevated hover:shadow-lg flex items-center justify-center
@@ -27,10 +27,34 @@
 
 <script>
 import AppHeader from '@/components/nav/AppHeader.vue';
+import { supabase } from '@/lib/supabase.js';
 
 export default {
   name: 'App',
-  components: { AppHeader }
+  components: { AppHeader },
+  computed: {
+    isAuthenticated() {
+      return !!this.$store.state.user;
+    }
+  },
+  created() {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const previousUserId = this.$store.state.user?.id ?? null;
+      const nextUserId = session?.user?.id ?? null;
+
+      this.$store.commit('setUser', session?.user || null);
+      if (nextUserId && nextUserId !== previousUserId) {
+        await this.$store.dispatch('fetchBills');
+      }
+      if (!session && this.$route.name !== 'login') {
+        this.$router.push({ name: 'login' });
+      }
+    });
+    this.authSubscription = subscription;
+  },
+  beforeUnmount() {
+    this.authSubscription?.unsubscribe();
+  }
 };
 </script>
 
