@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createStore } from 'vuex';
-import { mutations } from '@/store/index.js';
+import { mutations, generateBillInstances, checkIfPaid, readDarkModeCookie } from '@/store/index.js';
 
 function createTestStore(bills = []) {
   return createStore({
@@ -174,5 +174,140 @@ describe('Store - generateBillInstances (via imported functions)', () => {
     };
     const instances = generateBillInstances(bill);
     expect(instances[0].isPaid).toBe(true);
+  });
+});
+
+describe('checkIfPaid - recurring bill paid early', () => {
+  it('marks instance as paid when paidDate was stored using local midnight (matching app flow)', () => {
+    // In the actual app, markPaid stores: new Date(parseCalendarDate("2026-04-01")).toISOString()
+    // which is April 1 midnight local time expressed as ISO string.
+    const april1Local = new Date(2026, 3, 1); // April 1 midnight local
+    const bill = {
+      paidDates: [april1Local.toISOString()],
+    };
+    // generateBillInstances produces dueDate at some hour on April 1 local time
+    const dueDate = new Date(2026, 3, 1, 20, 0, 0); // April 1 at 8 PM local
+    expect(checkIfPaid(bill, dueDate)).toBe(true);
+  });
+
+  it('does not mark a different month as paid', () => {
+    const april1Local = new Date(2026, 3, 1);
+    const bill = {
+      paidDates: [april1Local.toISOString()],
+    };
+    const dueDate = new Date(2026, 4, 1, 12, 0, 0); // May 1
+    expect(checkIfPaid(bill, dueDate)).toBe(false);
+  });
+
+  it('full flow: recurring monthly bill marked paid shows up correctly', () => {
+    // Simulate: bill created in past, monthly on the 1st
+    const creationDate = new Date(2026, 0, 15, 14, 30, 0); // Jan 15 2:30 PM local
+    const bill = {
+      id: 'test-recurring',
+      name: 'Mortgage',
+      creationDate: creationDate.toISOString(),
+      dueDate: null,
+      amount: 1500,
+      recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 1, dayOfYear: null },
+      paidDates: [],
+    };
+
+    // Generate instances — should include April 1
+    const instances = generateBillInstances(bill);
+    const aprilInstance = instances.find(i => {
+      const d = new Date(i.dueDate);
+      return d.getMonth() === 3 && d.getDate() === 1; // April 1
+    });
+    expect(aprilInstance).toBeDefined();
+    expect(aprilInstance.isPaid).toBe(false);
+
+    // Now mark it paid using the same date that the detail page would use:
+    // parseCalendarDate("2026-04-01") = new Date(2026, 3, 1) = April 1 midnight local
+    const paidDate = new Date(2026, 3, 1);
+    bill.paidDates.push(paidDate.toISOString());
+
+    // Regenerate instances — April 1 should now be paid
+    const updated = generateBillInstances(bill);
+    const aprilUpdated = updated.find(i => {
+      const d = new Date(i.dueDate);
+      return d.getMonth() === 3 && d.getDate() === 1;
+    });
+    expect(aprilUpdated).toBeDefined();
+    expect(aprilUpdated.isPaid).toBe(true);
+  });
+});
+
+describe('Dark mode cookie persistence', () => {
+  afterEach(() => {
+    // Clean up cookie
+    document.cookie = 'darkMode=; path=/; max-age=0';
+  });
+
+  it('readDarkModeCookie returns false when no cookie set', () => {
+    document.cookie = 'darkMode=; path=/; max-age=0';
+    expect(readDarkModeCookie()).toBe(false);
+  });
+
+  it('readDarkModeCookie returns true when cookie is 1', () => {
+    document.cookie = 'darkMode=1; path=/';
+    expect(readDarkModeCookie()).toBe(true);
+  });
+
+  it('readDarkModeCookie returns false when cookie is 0', () => {
+    document.cookie = 'darkMode=0; path=/';
+    expect(readDarkModeCookie()).toBe(false);
+  });
+
+  it('toggleDarkMode sets the cookie', () => {
+    const state = { darkMode: false };
+    mutations.toggleDarkMode(state);
+    expect(state.darkMode).toBe(true);
+    expect(document.cookie).toContain('darkMode=1');
+
+    mutations.toggleDarkMode(state);
+    expect(state.darkMode).toBe(false);
+    expect(document.cookie).toContain('darkMode=0');
+  });
+
+  it('setDarkMode sets the cookie to specific value', () => {
+    const state = { darkMode: false };
+    mutations.setDarkMode(state, true);
+    expect(state.darkMode).toBe(true);
+    expect(document.cookie).toContain('darkMode=1');
+  });
+});
+
+describe('recurringBills getter - next due date', () => {
+  it('shows next upcoming due date for recurring bills, not null', async () => {
+    // Import the real store (with all production getters)
+    const storeModule = await import('@/store/index.js');
+    const store = storeModule.default;
+
+    const now = new Date();
+    const creationDate = new Date(now);
+    creationDate.setMonth(creationDate.getMonth() - 2);
+
+    // Seed the store with a recurring bill
+    store.commit('setBills', [{
+      id: 'recurring-1',
+      name: 'Monthly Bill',
+      creationDate: creationDate.toISOString(),
+      dueDate: null,
+      amount: 100,
+      recurring: { interval: 1, unit: 'month', dayOfWeek: null, dayOfMonth: 15, dayOfYear: null },
+      paidDates: [],
+    }]);
+
+    const recurring = store.getters.recurringBills;
+    expect(recurring).toHaveLength(1);
+    // dueDate should be set (not null), and should be in the future
+    expect(recurring[0].dueDate).not.toBeNull();
+    const dueDate = new Date(recurring[0].dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expect(dueDate >= today).toBe(true);
+
+    // Clean up
+    store.commit('setBills', []);
   });
 });

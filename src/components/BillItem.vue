@@ -1,6 +1,6 @@
 <template>
   <router-link
-    :to="{ name: 'bill-details', params: { id: bill.id }, query: bill.dueDate ? { due: new Date(bill.dueDate).toISOString().split('T')[0] } : {} }"
+    :to="{ name: 'bill-details', params: { id: bill.id }, query: bill.dueDate ? { due: toLocalDateString(bill.dueDate) } : {} }"
     class="block"
   >
     <div
@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import { formatAmount, daysUntilDueLabel, billStatus, recurringLabel } from '@/utils/formatting.js';
+import { formatAmount, daysUntilDueLabel, billStatus, recurringLabel, toLocalDateString } from '@/utils/formatting.js';
 
 export default {
   name: 'BillItem',
@@ -73,6 +73,6 @@ export default {
       return 'text-surface-400 dark:text-surface-500';
     }
   },
-  methods: { formatAmount, recurringLabel }
+  methods: { formatAmount, recurringLabel, toLocalDateString }
 };
 </script>

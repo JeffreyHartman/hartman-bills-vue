@@ -72,8 +72,13 @@ export default {
       this.$store.commit('toggleDarkMode');
     },
     async logout() {
-      await this.$store.dispatch('logout');
-      this.$router.push({ name: 'login' });
+      try {
+        await this.$store.dispatch('logout');
+        this.$router.push({ name: 'login' });
+      } catch (err) {
+        console.error('Logout failed:', err);
+        window.alert('Failed to sign out. Please try again.');
+      }
     }
   }
 };

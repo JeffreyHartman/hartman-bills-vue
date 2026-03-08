@@ -155,14 +155,16 @@ export default {
     async markAsPaid() {
       try {
         await this.$store.dispatch('markPaid', { billId: this.bill.id, date: this.displayDueDate });
-      } catch {
+      } catch (err) {
+        console.error('markAsPaid failed:', err);
         window.alert('Failed to mark as paid. Please try again.');
       }
     },
     async markAsUnpaid() {
       try {
         await this.$store.dispatch('markUnpaid', { billId: this.bill.id, date: this.displayDueDate });
-      } catch {
+      } catch (err) {
+        console.error('markAsUnpaid failed:', err);
         window.alert('Failed to mark as unpaid. Please try again.');
       }
     },
@@ -171,7 +173,8 @@ export default {
         try {
           await this.$store.dispatch('deleteBill', this.bill.id);
           this.$router.push('/');
-        } catch {
+        } catch (err) {
+          console.error('confirmDelete failed:', err);
           window.alert('Failed to delete bill. Please try again.');
         }
       }

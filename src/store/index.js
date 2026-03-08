@@ -128,13 +128,18 @@ const mutations = {
   toggleSidebar(state) {
     state.isSidebarOpen = !state.isSidebarOpen;
   },
-  toggleDarkMode(state) {
-    state.darkMode = !state.darkMode;
+  setDarkMode(state, value) {
+    state.darkMode = value;
     if (state.darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+    // Persist preference in a cookie (no expiry = session, so set 10 years)
+    document.cookie = `darkMode=${value ? '1' : '0'}; path=/; max-age=${60 * 60 * 24 * 365 * 10}; SameSite=Lax`;
+  },
+  toggleDarkMode(state) {
+    mutations.setDarkMode(state, !state.darkMode);
   },
   setUser(state, user) {
     state.user = user;
@@ -190,7 +195,10 @@ const actions = {
       .select('*')
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('fetchBills failed:', error);
+      throw error;
+    }
     commit('setBills', data.map(mapBillFromDb));
   },
 
@@ -202,12 +210,23 @@ const actions = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('addBill failed:', error);
+      throw error;
+    }
     commit('addBill', mapBillFromDb(data));
   },
 
-  async updateBill({ commit }, updatedBill) {
-    const row = mapBillToDb(updatedBill);
+  async updateBill({ commit, state }, updatedBill) {
+    const existingBill = state.bills.find(b => b.id === updatedBill.id);
+    if (!existingBill) {
+      const err = new Error(`updateBill: bill not found: ${updatedBill.id}`);
+      console.error(err.message);
+      throw err;
+    }
+
+    // Merge with existing bill to prevent losing fields like paidDates
+    const row = mapBillToDb({ ...existingBill, ...updatedBill });
     const { data, error } = await supabase
       .from('bills')
       .update(row)
@@ -215,7 +234,10 @@ const actions = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('updateBill failed:', error);
+      throw error;
+    }
     commit('updateBill', mapBillFromDb(data));
   },
 
@@ -225,13 +247,20 @@ const actions = {
       .delete()
       .eq('id', billId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('deleteBill failed:', error);
+      throw error;
+    }
     commit('deleteBill', billId);
   },
 
   async markPaid({ commit, state }, { billId, date }) {
     const bill = state.bills.find(b => b.id === billId);
-    if (!bill) return;
+    if (!bill) {
+      const err = new Error(`markPaid: bill not found: ${billId}`);
+      console.error(err.message);
+      throw err;
+    }
 
     const target = new Date(date);
     const alreadyPaid = bill.paidDates.some(pd => {
@@ -248,13 +277,20 @@ const actions = {
       .update({ paid_dates: newPaidDates })
       .eq('id', billId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('markPaid failed:', error);
+      throw error;
+    }
     commit('markPaid', { billId, date });
   },
 
   async markUnpaid({ commit, state }, { billId, date }) {
     const bill = state.bills.find(b => b.id === billId);
-    if (!bill) return;
+    if (!bill) {
+      const err = new Error(`markUnpaid: bill not found: ${billId}`);
+      console.error(err.message);
+      throw err;
+    }
 
     const target = new Date(date);
     const newPaidDates = bill.paidDates.filter(pd => {
@@ -268,22 +304,42 @@ const actions = {
       .update({ paid_dates: newPaidDates })
       .eq('id', billId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('markUnpaid failed:', error);
+      throw error;
+    }
     commit('markUnpaid', { billId, date });
   },
 
   async logout({ commit }) {
-    await supabase.auth.signOut();
+    let signOutError = null;
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Supabase signOut failed:', err);
+      signOutError = err;
+    }
+    // Always clear local state so the user isn't stuck in a broken session
     commit('setUser', null);
     commit('setBills', []);
+    if (signOutError) throw signOutError;
   }
 };
 
+function readDarkModeCookie() {
+  const match = document.cookie.match(/(?:^|;\s*)darkMode=(\d)/);
+  return match ? match[1] === '1' : false;
+}
+
 const store = createStore({
   state() {
+    const darkMode = typeof document !== 'undefined' && readDarkModeCookie();
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    }
     return {
       isSidebarOpen: false,
-      darkMode: false,
+      darkMode,
       user: null,
       bills: []
     };
@@ -308,8 +364,28 @@ const store = createStore({
         .filter(i => new Date(i.dueDate) < today && !i.isPaid)
         .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
     },
-    recurringBills(state) {
-      return state.bills.filter(b => b.recurring !== null);
+    recurringBills(state, getters) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return state.bills
+        .filter(b => b.recurring !== null)
+        .map(b => {
+          // Find the next upcoming unpaid instance for display
+          const instance = getters.allInstances
+            .filter(i => i.id === b.id && !i.isPaid && new Date(i.dueDate) >= today)
+            .sort((a, c) => new Date(a.dueDate) - new Date(c.dueDate))[0];
+          // If no unpaid future instance, compute next occurrence from today
+          let dueDate = instance ? instance.dueDate : null;
+          if (!dueDate) {
+            dueDate = calculateDueDate(b.recurring, today);
+          }
+          return {
+            ...b,
+            dueDate,
+            isPaid: false,
+            instanceId: instance ? instance.instanceId : b.id,
+          };
+        });
     },
     paidBills(state, getters) {
       return getters.allInstances
@@ -341,4 +417,4 @@ const store = createStore({
 export default store;
 
 // Export for testing
-export { mutations, generateBillInstances, checkIfPaid, calculateDueDate, incrementDate };
+export { mutations, generateBillInstances, checkIfPaid, calculateDueDate, incrementDate, readDarkModeCookie };

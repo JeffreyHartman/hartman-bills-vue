@@ -27,7 +27,7 @@
 
 <script>
 import AppHeader from '@/components/nav/AppHeader.vue';
-import { supabase } from '@/lib/supabase.js';
+import { supabase, signalAuthReady } from '@/lib/supabase.js';
 
 export default {
   name: 'App',
@@ -43,8 +43,19 @@ export default {
       const nextUserId = session?.user?.id ?? null;
 
       this.$store.commit('setUser', session?.user || null);
+      signalAuthReady();
+
+      // IMPORTANT: Do NOT await fetchBills here. The Supabase auth client awaits
+      // this callback inside _notifyAllSubscribers, which runs inside _initialize().
+      // If fetchBills awaits getSession() (via _getAccessToken), it deadlocks because
+      // getSession() waits for initializePromise, which is blocked on _initialize().
+      // Using nextTick + fire-and-forget breaks the synchronous chain.
       if (nextUserId && nextUserId !== previousUserId) {
-        await this.$store.dispatch('fetchBills');
+        this.$nextTick(() => {
+          this.$store.dispatch('fetchBills').catch(err => {
+            console.error('Failed to fetch bills after auth change:', err);
+          });
+        });
       }
       if (!session && this.$route.name !== 'login') {
         this.$router.push({ name: 'login' });

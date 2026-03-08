@@ -7,6 +7,7 @@ import {
   daysUntilDueLabel,
   billStatus,
   recurringLabel,
+  toLocalDateString,
 } from '@/utils/formatting.js';
 
 describe('formatAmount', () => {
@@ -137,5 +138,37 @@ describe('recurringLabel', () => {
 
   it('returns "Yearly" for interval 1, year', () => {
     expect(recurringLabel({ interval: 1, unit: 'year' })).toBe('Yearly');
+  });
+});
+
+describe('toLocalDateString', () => {
+  it('formats a date as YYYY-MM-DD using local time', () => {
+    // Use a date at noon local to avoid any timezone ambiguity
+    const date = new Date(2026, 3, 1, 12, 0, 0); // April 1, 2026 noon local
+    expect(toLocalDateString(date)).toBe('2026-04-01');
+  });
+
+  it('pads single-digit months and days', () => {
+    const date = new Date(2026, 0, 5, 12, 0, 0); // January 5
+    expect(toLocalDateString(date)).toBe('2026-01-05');
+  });
+
+  it('preserves local date even for late-night times that shift in UTC', () => {
+    // 11 PM local time — in timezones west of UTC, this is the next day in UTC
+    const date = new Date(2026, 3, 1, 23, 0, 0); // April 1, 11 PM local
+    expect(toLocalDateString(date)).toBe('2026-04-01');
+  });
+
+  it('handles ISO string input', () => {
+    // Create a date string that represents April 1 at noon local
+    const date = new Date(2026, 3, 1, 12, 0, 0);
+    expect(toLocalDateString(date.toISOString())).toBe('2026-04-01');
+  });
+
+  it('short-circuits YYYY-MM-DD strings without UTC parse', () => {
+    // new Date('2026-04-01') parses as UTC midnight, which shifts to March 31
+    // in negative UTC offsets. The short-circuit avoids this.
+    expect(toLocalDateString('2026-04-01')).toBe('2026-04-01');
+    expect(toLocalDateString('2026-12-25')).toBe('2026-12-25');
   });
 });
