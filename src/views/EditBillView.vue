@@ -105,8 +105,10 @@
 
       <!-- Actions -->
       <div class="flex gap-3">
-        <button type="button" @click="$router.back()" class="btn-secondary flex-1">Cancel</button>
-        <button type="submit" class="btn-primary flex-1">{{ isEditing ? 'Save Changes' : 'Add Bill' }}</button>
+        <button type="button" @click="$router.back()" class="btn-secondary flex-1" :disabled="isSaving">Cancel</button>
+        <button type="submit" class="btn-primary flex-1" :disabled="isSaving">
+          {{ isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Bill') }}
+        </button>
       </div>
     </form>
   </div>
@@ -119,6 +121,7 @@ export default {
   name: 'EditBillView',
   data() {
     return {
+      isSaving: false,
       form: {
         name: '',
         amount: null,
@@ -159,6 +162,10 @@ export default {
   },
   methods: {
     async saveBill() {
+      if (this.isSaving) return;
+      if (this.isEditing && !this.existingBill) return;
+      this.isSaving = true;
+
       const billData = {
         name: this.form.name,
         amount: this.form.amount,
@@ -185,6 +192,8 @@ export default {
         this.$router.push('/');
       } catch {
         window.alert('Failed to save bill. Please try again.');
+      } finally {
+        this.isSaving = false;
       }
     }
   }
