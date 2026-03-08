@@ -85,10 +85,10 @@ describe('BillItem', () => {
     id: 'a1b2c3d4-0002-4000-8000-000000000002',
     name: 'Water',
     amount: 67.00,
-    dueDate: new Date(Date.now() - 5 * 86400000),
+    dueDate: new Date(2026, 2, 2),  // March 2, 2026 in local time
     recurring: null,
     isPaid: true,
-    paidDates: ['2026-03-02T12:00:00Z'],
+    paidDates: [new Date(2026, 2, 2).toISOString()],
   };
 
   it('renders bill name and amount', () => {
@@ -114,6 +114,7 @@ describe('BillItem', () => {
       global: { plugins: [makeRouter()] },
     });
     expect(wrapper.text()).toContain('Paid on');
+    expect(wrapper.text()).toContain('Mar 2, 2026');
   });
 
   it('shows line-through for paid bills', () => {

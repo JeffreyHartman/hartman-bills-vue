@@ -466,6 +466,7 @@ export default {
         await this.$store.dispatch('updateBill', {
           id: this.existingBill.id,
           paidDates: this.existingBill.paidDates,
+          overrides: this.existingBill.overrides,
           ...billData,
         });
       } else {

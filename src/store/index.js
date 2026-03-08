@@ -36,10 +36,10 @@ function generateBillInstances(bill) {
     if (dueDate > oneYearFromNow) break;
     const key = overrideKey(dueDate);
     const override = overrides[key] || {};
-    const isPaid = checkIfPaid(bill, dueDate);
     // Apply per-instance overrides (amount, dueDate shift)
     const effectiveDueDate = override.dueDate ? new Date(override.dueDate + 'T12:00:00') : dueDate;
     const effectiveAmount = override.amount != null ? Number(override.amount) : bill.amount;
+    const isPaid = checkIfPaid(bill, effectiveDueDate);
     instances.push({
       ...bill,
       dueDate: effectiveDueDate,

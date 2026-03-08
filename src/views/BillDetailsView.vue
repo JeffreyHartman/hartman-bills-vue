@@ -222,6 +222,7 @@ export default {
     formatDateLong,
     recurringLabel,
     handleEdit() {
+      if (!this.bill) return;
       if (this.isRecurringInstance) {
         this.showEditModal = true;
       } else {
@@ -229,6 +230,7 @@ export default {
       }
     },
     navigateEdit(scope) {
+      if (!this.bill) return;
       this.showEditModal = false;
       const route = { name: 'bill-edit', params: { id: this.bill.id } };
       if (scope === 'instance') {
