@@ -5,14 +5,25 @@ export function formatAmount(amount) {
   }).format(amount);
 }
 
+// Parse a date string safely in local time (YYYY-MM-DD strings are UTC by spec, which shifts dates in US timezones)
+function parseLocalDate(dateString) {
+  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(dateString);
+}
+
 export function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return parseLocalDate(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function formatDateWithYear(dateString) {
+  return parseLocalDate(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function formatDateLong(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return parseLocalDate(dateString).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 export function daysUntilDue(dueDate) {

@@ -19,11 +19,14 @@ npx supabase stop           # Stop local services
 npx supabase status         # Get local URLs and keys
 npx supabase db reset       # Drop and recreate from migrations + seed
 npx supabase migration new  # Create a new migration file
+npx supabase db push         # Apply pending migrations (preserves data)
 ```
 
 Local Studio UI: http://127.0.0.1:54323
 
 After `npx supabase start`, copy the anon key and API URL into `.env.local` (see `.env.example`).
+
+**IMPORTANT:** Never run `npx supabase db reset` without explicit user permission — it destroys all local data. When applying new migrations during development, always use `npx supabase db push` to apply pending migrations while preserving existing data.
 
 ## Architecture
 

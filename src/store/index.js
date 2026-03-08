@@ -1,11 +1,21 @@
 import { createStore } from 'vuex';
 import { supabase } from '@/lib/supabase.js';
 
+// Get the override key for a given due date (YYYY-MM-DD in local time)
+function overrideKey(dueDate) {
+  const d = new Date(dueDate);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function generateBillInstances(bill) {
   const instances = [];
   const startDate = new Date(bill.creationDate || new Date());
   const oneYearFromNow = new Date();
   oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+  const overrides = bill.overrides || {};
 
   if (!bill.recurring) {
     if (!bill.dueDate) return instances;
@@ -24,12 +34,19 @@ function generateBillInstances(bill) {
   while (currentDate < oneYearFromNow) {
     const dueDate = calculateDueDate(bill.recurring, currentDate);
     if (dueDate > oneYearFromNow) break;
-    const isPaid = checkIfPaid(bill, dueDate);
+    const key = overrideKey(dueDate);
+    const override = overrides[key] || {};
+    // Apply per-instance overrides (amount, dueDate shift)
+    const effectiveDueDate = override.dueDate ? new Date(override.dueDate + 'T12:00:00') : dueDate;
+    const effectiveAmount = override.amount != null ? Number(override.amount) : bill.amount;
+    const isPaid = checkIfPaid(bill, effectiveDueDate);
     instances.push({
       ...bill,
-      dueDate,
+      dueDate: effectiveDueDate,
+      amount: effectiveAmount,
       isPaid,
-      instanceId: `${bill.id}-${dueDate.toISOString()}`
+      instanceId: `${bill.id}-${dueDate.toISOString()}`,
+      originalDueDate: dueDate,
     });
     currentDate = incrementDate(bill.recurring, currentDate);
   }
@@ -107,6 +124,9 @@ function mapBillFromDb(row) {
     amount: Number(row.amount),
     recurring: row.recurring,
     paidDates: row.paid_dates || [],
+    icon: row.icon || 'receipt',
+    iconColor: row.icon_color || '#4f46e5',
+    overrides: row.overrides || {},
   };
 }
 
@@ -117,6 +137,9 @@ function mapBillToDb(bill, userId) {
     amount: bill.amount,
     recurring: bill.recurring || null,
     paid_dates: bill.paidDates || [],
+    icon: bill.icon || 'receipt',
+    icon_color: bill.iconColor || '#4f46e5',
+    overrides: bill.overrides || {},
   };
   if (bill.creationDate !== undefined) row.creation_date = bill.creationDate;
   if (bill.dueDate !== undefined) row.due_date = bill.dueDate;
@@ -311,6 +334,30 @@ const actions = {
     commit('markUnpaid', { billId, date });
   },
 
+  async updateBillOverride({ commit, state }, { billId, instanceDate, overrideData }) {
+    const bill = state.bills.find(b => b.id === billId);
+    if (!bill) {
+      const err = new Error(`updateBillOverride: bill not found: ${billId}`);
+      console.error(err.message);
+      throw err;
+    }
+
+    const newOverrides = { ...bill.overrides, [instanceDate]: overrideData };
+    const row = { overrides: newOverrides };
+    const { data, error } = await supabase
+      .from('bills')
+      .update(row)
+      .eq('id', billId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('updateBillOverride failed:', error);
+      throw error;
+    }
+    commit('updateBill', mapBillFromDb(data));
+  },
+
   async logout({ commit }) {
     let signOutError = null;
     try {
@@ -395,6 +442,18 @@ const store = createStore({
     billById(state) {
       return (id) => state.bills.find(b => b.id === id);
     },
+    currentMonthBills(state, getters) {
+      const now = new Date();
+      const month = now.getMonth();
+      const year = now.getFullYear();
+      return getters.upcomingBills.filter(b => {
+        const d = new Date(b.dueDate);
+        return d.getMonth() === month && d.getFullYear() === year;
+      });
+    },
+    currentMonthTotal(state, getters) {
+      return getters.currentMonthBills.reduce((sum, b) => sum + b.amount, 0);
+    },
     totalDue(state, getters) {
       return getters.upcomingBills.reduce((sum, b) => sum + b.amount, 0);
     },
@@ -403,8 +462,8 @@ const store = createStore({
     },
     summaryStats(state, getters) {
       return {
-        upcomingCount: getters.upcomingBills.length,
-        upcomingTotal: getters.totalDue,
+        currentMonthCount: getters.currentMonthBills.length,
+        currentMonthTotal: getters.currentMonthTotal,
         overdueCount: getters.overdueBills.length,
         overdueTotal: getters.totalOverdue,
         paidCount: getters.paidBills.length,
@@ -417,4 +476,4 @@ const store = createStore({
 export default store;
 
 // Export for testing
-export { mutations, generateBillInstances, checkIfPaid, calculateDueDate, incrementDate, readDarkModeCookie };
+export { mutations, generateBillInstances, checkIfPaid, calculateDueDate, incrementDate, overrideKey, readDarkModeCookie };

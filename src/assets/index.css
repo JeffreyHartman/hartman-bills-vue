@@ -49,3 +49,25 @@
            transition-all duration-150;
   }
 }
+
+/* Modal transitions */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.15s ease;
+}
+.modal-enter-active > div:last-child,
+.modal-leave-active > div:last-child {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+.modal-enter-from > div:last-child {
+  transform: translateY(1rem);
+  opacity: 0;
+}
+.modal-leave-to > div:last-child {
+  transform: translateY(1rem);
+  opacity: 0;
+}

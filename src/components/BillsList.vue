@@ -29,7 +29,7 @@
         </div>
 
         <!-- Bill cards -->
-        <div class="card overflow-hidden divide-y divide-surface-100 dark:divide-surface-800">
+        <div class="space-y-2">
           <bill-item
             v-for="bill in group.bills"
             :key="bill.instanceId || bill.id"
