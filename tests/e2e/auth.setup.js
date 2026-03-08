@@ -69,9 +69,12 @@ export async function ensureTestBillExists(page) {
   const addButton = page.getByLabel('Add new bill');
   await addButton.waitFor({ state: 'visible', timeout: 5000 });
   await addButton.click();
+  const future = new Date();
+  future.setDate(future.getDate() + 30);
+  const futureDate = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}-${String(future.getDate()).padStart(2, '0')}`;
   await page.fill('#name', 'E2E Test Bill');
   await page.fill('#amount', '42.50');
-  await page.fill('#dueDate', '2026-12-15');
+  await page.fill('#dueDate', futureDate);
   await page.getByRole('button', { name: 'Add Bill' }).click();
   await page.waitForURL(/.*(?<!new)$/, { timeout: 8000 });
 }

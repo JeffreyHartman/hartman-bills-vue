@@ -110,6 +110,7 @@ function makeStore() {
     },
     actions: {
       addBill: () => {},
+      updateBill: () => {},
     },
   });
 }

@@ -246,8 +246,8 @@ test.describe('Input Validation', () => {
     await intervalInput.fill('');
     await intervalInput.type('abc12xyz');
     const value = await intervalInput.inputValue();
-    // Only digits should remain
-    expect(value.replace(/[^\d]/g, '')).toBe(value);
+    // Only digits should remain, and specifically '12' from 'abc12xyz'
+    expect(value).toBe('12');
   });
 
   test('bill name has max length', async ({ page }) => {

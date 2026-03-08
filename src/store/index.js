@@ -217,8 +217,16 @@ const actions = {
     commit('addBill', mapBillFromDb(data));
   },
 
-  async updateBill({ commit }, updatedBill) {
-    const row = mapBillToDb(updatedBill);
+  async updateBill({ commit, state }, updatedBill) {
+    const existingBill = state.bills.find(b => b.id === updatedBill.id);
+    if (!existingBill) {
+      const err = new Error(`updateBill: bill not found: ${updatedBill.id}`);
+      console.error(err.message);
+      throw err;
+    }
+
+    // Merge with existing bill to prevent losing fields like paidDates
+    const row = mapBillToDb({ ...existingBill, ...updatedBill });
     const { data, error } = await supabase
       .from('bills')
       .update(row)
@@ -249,8 +257,9 @@ const actions = {
   async markPaid({ commit, state }, { billId, date }) {
     const bill = state.bills.find(b => b.id === billId);
     if (!bill) {
-      console.error('markPaid: bill not found:', billId);
-      return;
+      const err = new Error(`markPaid: bill not found: ${billId}`);
+      console.error(err.message);
+      throw err;
     }
 
     const target = new Date(date);
@@ -278,8 +287,9 @@ const actions = {
   async markUnpaid({ commit, state }, { billId, date }) {
     const bill = state.bills.find(b => b.id === billId);
     if (!bill) {
-      console.error('markUnpaid: bill not found:', billId);
-      return;
+      const err = new Error(`markUnpaid: bill not found: ${billId}`);
+      console.error(err.message);
+      throw err;
     }
 
     const target = new Date(date);
@@ -364,9 +374,14 @@ const store = createStore({
           const instance = getters.allInstances
             .filter(i => i.id === b.id && !i.isPaid && new Date(i.dueDate) >= today)
             .sort((a, c) => new Date(a.dueDate) - new Date(c.dueDate))[0];
+          // If no unpaid future instance, compute next occurrence from today
+          let dueDate = instance ? instance.dueDate : null;
+          if (!dueDate) {
+            dueDate = calculateDueDate(b.recurring, today);
+          }
           return {
             ...b,
-            dueDate: instance ? instance.dueDate : b.creationDate,
+            dueDate,
             isPaid: false,
             instanceId: instance ? instance.instanceId : b.id,
           };
