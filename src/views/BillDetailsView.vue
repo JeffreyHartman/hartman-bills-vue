@@ -67,16 +67,57 @@
         Mark Unpaid
       </button>
 
-      <router-link
-        :to="editRoute"
+      <button
+        @click="handleEdit"
         class="btn-secondary flex items-center justify-center gap-2"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
           <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
         </svg>
         Edit
-      </router-link>
+      </button>
     </div>
+
+    <!-- Edit scope modal for recurring bills -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" @click.self="showEditModal = false">
+          <div class="fixed inset-0 bg-black/40" @click="showEditModal = false"></div>
+          <div class="relative bg-white dark:bg-surface-900 rounded-2xl shadow-elevated w-full max-w-sm p-5 space-y-3 z-10">
+            <h3 class="text-base font-semibold">Edit recurring bill</h3>
+            <button
+              @click="navigateEdit('instance')"
+              class="card w-full p-4 text-left flex items-center gap-3 hover:border-accent transition-colors"
+            >
+              <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-accent">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium text-sm">This instance only</p>
+                <p class="text-xs text-surface-400 mt-0.5">Change amount or due date for just this occurrence</p>
+              </div>
+            </button>
+            <button
+              @click="navigateEdit('all')"
+              class="card w-full p-4 text-left flex items-center gap-3 hover:border-accent transition-colors"
+            >
+              <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-accent">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium text-sm">All instances</p>
+                <p class="text-xs text-surface-400 mt-0.5">Change the recurring bill and all future occurrences</p>
+              </div>
+            </button>
+            <button @click="showEditModal = false" class="w-full text-sm text-surface-400 py-2 mt-1">Cancel</button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Danger zone -->
     <div class="pt-2">
@@ -103,6 +144,11 @@ import { Receipt } from 'lucide-vue-next';
 
 export default {
   name: 'BillDetailsView',
+  data() {
+    return {
+      showEditModal: false,
+    };
+  },
   computed: {
     ...mapGetters(['billById']),
     bill() {
@@ -167,18 +213,29 @@ export default {
       if (days <= 3) return 'text-status-warning';
       return '';
     },
-    editRoute() {
-      const route = { name: 'bill-edit', params: { id: this.bill.id } };
-      if (this.bill.recurring && this.$route.query.due) {
-        route.query = { instance: this.$route.query.due };
-      }
-      return route;
+    isRecurringInstance() {
+      return this.bill?.recurring && this.$route.query.due;
     }
   },
   methods: {
     formatAmount,
     formatDateLong,
     recurringLabel,
+    handleEdit() {
+      if (this.isRecurringInstance) {
+        this.showEditModal = true;
+      } else {
+        this.$router.push({ name: 'bill-edit', params: { id: this.bill.id } });
+      }
+    },
+    navigateEdit(scope) {
+      this.showEditModal = false;
+      const route = { name: 'bill-edit', params: { id: this.bill.id } };
+      if (scope === 'instance') {
+        route.query = { instance: this.$route.query.due };
+      }
+      this.$router.push(route);
+    },
     parseCalendarDate(value) {
       if (!value) return null;
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {

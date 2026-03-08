@@ -1,32 +1,5 @@
 <template>
   <div class="pt-6">
-    <!-- Edit scope chooser for recurring bills -->
-    <div v-if="showScopeChooser" class="space-y-3 mb-6">
-      <p class="text-sm font-medium text-surface-600 dark:text-surface-300">What would you like to edit?</p>
-      <button @click="editScope = 'instance'" class="card w-full p-4 text-left flex items-center gap-3 hover:border-accent transition-colors" :class="editScope === 'instance' ? 'border-accent ring-2 ring-accent/20' : ''">
-        <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-accent">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-          </svg>
-        </div>
-        <div>
-          <p class="font-medium text-sm">This instance only</p>
-          <p class="text-xs text-surface-400 mt-0.5">Change amount or due date for just this occurrence</p>
-        </div>
-      </button>
-      <button @click="editScope = 'all'" class="card w-full p-4 text-left flex items-center gap-3 hover:border-accent transition-colors" :class="editScope === 'all' ? 'border-accent ring-2 ring-accent/20' : ''">
-        <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-accent">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
-          </svg>
-        </div>
-        <div>
-          <p class="font-medium text-sm">All instances</p>
-          <p class="text-xs text-surface-400 mt-0.5">Change the recurring bill and all future occurrences</p>
-        </div>
-      </button>
-    </div>
-
     <form @submit.prevent="saveBill" novalidate class="space-y-4">
       <!-- Instance-only edit form -->
       <div v-if="editScope === 'instance'" class="card p-6 space-y-5">
@@ -67,21 +40,26 @@
         <!-- Icon & Color Picker -->
         <div>
           <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-2">Icon</label>
-          <div class="flex items-center gap-3 mb-3">
+          <button
+            type="button"
+            @click="showIconPicker = !showIconPicker"
+            class="w-full flex items-center gap-3 mb-3 p-2 -mx-2 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors cursor-pointer"
+          >
             <div
               class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
               :style="{ backgroundColor: form.iconColor }"
             >
               <component :is="selectedIconComponent" class="w-6 h-6 text-white" :stroke-width="1.75" />
             </div>
-            <div class="flex-1">
+            <div class="flex-1 text-left">
               <p class="text-sm font-medium">{{ selectedIconLabel }}</p>
               <p class="text-xs text-surface-400">Tap to change icon and color</p>
             </div>
-            <button type="button" @click="showIconPicker = !showIconPicker" class="btn-secondary text-xs px-3 py-1.5">
-              {{ showIconPicker ? 'Done' : 'Change' }}
-            </button>
-          </div>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+                 class="w-4 h-4 text-surface-300 flex-shrink-0 transition-transform" :class="showIconPicker ? 'rotate-180' : ''">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
 
           <div v-if="showIconPicker" class="space-y-3 p-3 bg-surface-50 dark:bg-surface-800 rounded-xl">
             <!-- Icon grid -->
@@ -249,7 +227,7 @@ export default {
     return {
       isSaving: false,
       formError: null,
-      editScope: null,
+      editScope: 'all',
       showIconPicker: false,
       billIcons: BILL_ICONS,
       iconColors: ICON_COLORS,
@@ -284,9 +262,6 @@ export default {
     },
     isRecurringInstance() {
       return this.isEditing && this.existingBill?.recurring && this.instanceDate;
-    },
-    showScopeChooser() {
-      return this.isRecurringInstance && this.editScope === null;
     },
     instanceDateLabel() {
       if (!this.instanceDate) return '';
@@ -325,20 +300,13 @@ export default {
         this.form.dueDate = d.toISOString().split('T')[0];
       }
 
-      // Pre-fill instance form with existing override or base values
+      // Determine edit scope from URL
       if (this.isRecurringInstance) {
+        this.editScope = 'instance';
         const override = (bill.overrides || {})[this.instanceDate] || {};
         this.instanceForm.amountDisplay = override.amount != null ? String(override.amount) : String(bill.amount);
         this.instanceForm.dueDate = override.dueDate || this.instanceDate;
       }
-
-      // If not a recurring instance, skip scope chooser
-      if (!this.isRecurringInstance) {
-        this.editScope = 'all';
-      }
-    } else {
-      // New bill — no scope chooser needed
-      this.editScope = 'all';
     }
   },
   methods: {
