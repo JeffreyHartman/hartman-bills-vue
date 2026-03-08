@@ -172,16 +172,20 @@ export default {
         dueDate: this.form.isRecurring ? null : new Date(this.form.dueDate + 'T12:00:00').toISOString(),
       };
 
-      if (this.isEditing) {
-        await this.$store.dispatch('updateBill', {
-          id: this.existingBill.id,
-          paidDates: this.existingBill.paidDates,
-          ...billData,
-        });
-      } else {
-        await this.$store.dispatch('addBill', { ...billData, creationDate: new Date().toISOString() });
+      try {
+        if (this.isEditing) {
+          await this.$store.dispatch('updateBill', {
+            id: this.existingBill.id,
+            paidDates: this.existingBill.paidDates,
+            ...billData,
+          });
+        } else {
+          await this.$store.dispatch('addBill', { ...billData, creationDate: new Date().toISOString() });
+        }
+        this.$router.push('/');
+      } catch {
+        window.alert('Failed to save bill. Please try again.');
       }
-      this.$router.push('/');
     }
   }
 };
