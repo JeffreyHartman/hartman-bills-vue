@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { supabase } from '@/lib/supabase.js';
+import { authReady } from '@/lib/supabase.js';
+import store from '@/store/index.js';
 import BillsView from '@/views/BillsView.vue';
 import BillDetailsView from '@/views/BillDetailsView.vue';
 import EditBillView from '@/views/EditBillView.vue';
@@ -42,8 +43,10 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   if (to.meta.requiresAuth === false) return;
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
+  // Wait for the initial auth state to be known (set by onAuthStateChange in App.vue).
+  // We avoid calling getSession() here because it can hang on page refresh.
+  await authReady;
+  if (!store.state.user) {
     return { name: 'login' };
   }
 });

@@ -8,3 +8,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Promise that resolves once the initial auth state is known and committed to the store.
+// The router guard awaits this instead of calling getSession() (which can hang).
+let _resolveAuthReady;
+export const authReady = new Promise(resolve => { _resolveAuthReady = resolve; });
+export function signalAuthReady() {
+  if (_resolveAuthReady) {
+    _resolveAuthReady();
+    _resolveAuthReady = null;
+  }
+}
