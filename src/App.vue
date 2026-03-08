@@ -38,15 +38,22 @@ export default {
     }
   },
   created() {
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const previousUserId = this.$store.state.user?.id ?? null;
+      const nextUserId = session?.user?.id ?? null;
+
       this.$store.commit('setUser', session?.user || null);
-      if (session?.user) {
+      if (nextUserId && nextUserId !== previousUserId) {
         await this.$store.dispatch('fetchBills');
       }
       if (!session && this.$route.name !== 'login') {
         this.$router.push({ name: 'login' });
       }
     });
+    this.authSubscription = subscription;
+  },
+  beforeUnmount() {
+    this.authSubscription?.unsubscribe();
   }
 };
 </script>

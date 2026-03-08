@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { supabase } from '@/lib/supabase.js';
-import BillsView from '../views/BillsView.vue';
-import BillDetailsView from '../views/BillDetailsView.vue';
-import EditBillView from '../views/EditBillView.vue';
-import LoginView from '../views/LoginView.vue';
+import BillsView from '@/views/BillsView.vue';
+import BillDetailsView from '@/views/BillDetailsView.vue';
+import EditBillView from '@/views/EditBillView.vue';
+import LoginView from '@/views/LoginView.vue';
 
 const routes = [
   {

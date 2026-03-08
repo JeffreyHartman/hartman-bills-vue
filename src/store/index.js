@@ -230,33 +230,46 @@ const actions = {
   },
 
   async markPaid({ commit, state }, { billId, date }) {
-    // Optimistic local update first
-    commit('markPaid', { billId, date });
-
-    // Then persist to Supabase
     const bill = state.bills.find(b => b.id === billId);
-    if (bill) {
-      const { error } = await supabase
-        .from('bills')
-        .update({ paid_dates: bill.paidDates })
-        .eq('id', billId);
+    if (!bill) return;
 
-      if (error) throw error;
-    }
+    const target = new Date(date);
+    const alreadyPaid = bill.paidDates.some(pd => {
+      const d = new Date(pd);
+      return d.getFullYear() === target.getFullYear() &&
+             d.getMonth() === target.getMonth() &&
+             d.getDate() === target.getDate();
+    });
+    if (alreadyPaid) return;
+
+    const newPaidDates = [...bill.paidDates, target.toISOString()];
+    const { error } = await supabase
+      .from('bills')
+      .update({ paid_dates: newPaidDates })
+      .eq('id', billId);
+
+    if (error) throw error;
+    commit('markPaid', { billId, date });
   },
 
   async markUnpaid({ commit, state }, { billId, date }) {
-    commit('markUnpaid', { billId, date });
-
     const bill = state.bills.find(b => b.id === billId);
-    if (bill) {
-      const { error } = await supabase
-        .from('bills')
-        .update({ paid_dates: bill.paidDates })
-        .eq('id', billId);
+    if (!bill) return;
 
-      if (error) throw error;
-    }
+    const target = new Date(date);
+    const newPaidDates = bill.paidDates.filter(pd => {
+      const d = new Date(pd);
+      return !(d.getFullYear() === target.getFullYear() &&
+               d.getMonth() === target.getMonth() &&
+               d.getDate() === target.getDate());
+    });
+    const { error } = await supabase
+      .from('bills')
+      .update({ paid_dates: newPaidDates })
+      .eq('id', billId);
+
+    if (error) throw error;
+    commit('markUnpaid', { billId, date });
   },
 
   async logout({ commit }) {

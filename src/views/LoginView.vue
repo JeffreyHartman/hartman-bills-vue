@@ -65,7 +65,7 @@ export default {
       this.loading = true;
       this.error = null;
 
-      const { error } = this.isSignUp
+      const { data, error } = this.isSignUp
         ? await supabase.auth.signUp({ email: this.email, password: this.password })
         : await supabase.auth.signInWithPassword({ email: this.email, password: this.password });
 
@@ -77,12 +77,14 @@ export default {
       }
 
       if (this.isSignUp) {
-        this.error = null;
         this.isSignUp = false;
-        // Local Supabase auto-confirms, so sign-in will work immediately
+        if (!data.session) {
+          this.error = 'Account created. Confirm your email, then sign in.';
+          return;
+        }
       }
 
-      this.$router.push('/');
+      this.$router.push({ name: 'bills' });
     }
   }
 };

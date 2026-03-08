@@ -173,7 +173,11 @@ export default {
       };
 
       if (this.isEditing) {
-        await this.$store.dispatch('updateBill', { id: this.existingBill.id, ...billData });
+        await this.$store.dispatch('updateBill', {
+          id: this.existingBill.id,
+          paidDates: this.existingBill.paidDates,
+          ...billData,
+        });
       } else {
         await this.$store.dispatch('addBill', { ...billData, creationDate: new Date().toISOString() });
       }

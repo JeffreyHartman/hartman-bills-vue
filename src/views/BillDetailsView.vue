@@ -153,15 +153,27 @@ export default {
       return new Date(value);
     },
     async markAsPaid() {
-      await this.$store.dispatch('markPaid', { billId: this.bill.id, date: this.displayDueDate });
+      try {
+        await this.$store.dispatch('markPaid', { billId: this.bill.id, date: this.displayDueDate });
+      } catch {
+        window.alert('Failed to mark as paid. Please try again.');
+      }
     },
     async markAsUnpaid() {
-      await this.$store.dispatch('markUnpaid', { billId: this.bill.id, date: this.displayDueDate });
+      try {
+        await this.$store.dispatch('markUnpaid', { billId: this.bill.id, date: this.displayDueDate });
+      } catch {
+        window.alert('Failed to mark as unpaid. Please try again.');
+      }
     },
     async confirmDelete() {
       if (window.confirm(`Delete "${this.bill.name}"? This cannot be undone.`)) {
-        await this.$store.dispatch('deleteBill', this.bill.id);
-        this.$router.push('/');
+        try {
+          await this.$store.dispatch('deleteBill', this.bill.id);
+          this.$router.push('/');
+        } catch {
+          window.alert('Failed to delete bill. Please try again.');
+        }
       }
     }
   }
