@@ -138,7 +138,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { formatAmount, formatDateLong, daysUntilDue, daysUntilDueLabel, billStatus, recurringLabel, toLocalDateString } from '@/utils/formatting.js';
+import { formatAmount, formatDateLong, daysUntilDue, daysUntilDueLabel, billStatus, recurringLabel } from '@/utils/formatting.js';
 import { ICON_MAP } from '@/utils/billIcons.js';
 import { Receipt } from 'lucide-vue-next';
 
@@ -163,7 +163,8 @@ export default {
     displayAmount() {
       if (!this.bill) return 0;
       if (!this.bill.recurring || !this.bill.overrides) return this.bill.amount;
-      const key = toLocalDateString(this.displayDueDate);
+      const key = this.$route.query.due;
+      if (!key) return this.bill.amount;
       const override = this.bill.overrides[key];
       if (override && override.amount != null) return Number(override.amount);
       return this.bill.amount;

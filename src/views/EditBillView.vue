@@ -73,6 +73,8 @@
                 :style="{ backgroundColor: form.icon === icon.key ? form.iconColor : 'transparent' }"
                 :class="form.icon === icon.key ? 'ring-2 ring-offset-2 ring-accent' : 'hover:bg-surface-200 dark:hover:bg-surface-700'"
                 :title="icon.label"
+                :aria-label="icon.label"
+                :aria-pressed="form.icon === icon.key"
               >
                 <component :is="getIconComponent(icon.key)" class="w-5 h-5" :class="form.icon === icon.key ? 'text-white' : 'text-surface-500'" :stroke-width="1.75" />
               </button>
@@ -89,6 +91,8 @@
                   class="w-8 h-8 rounded-full transition-all"
                   :style="{ backgroundColor: color }"
                   :class="form.iconColor === color ? 'ring-2 ring-offset-2 ring-surface-400' : 'hover:scale-110'"
+                  :aria-label="'Select color ' + color"
+                  :aria-pressed="form.iconColor === color"
                 ></button>
               </div>
             </div>
