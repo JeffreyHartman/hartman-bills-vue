@@ -56,12 +56,12 @@ export default {
     },
     pageTitle() {
       const titles = {
-        'bills': 'Bills',
+        'bills': 'Coffer',
         'bill-details': 'Details',
         'bill-edit': 'Edit Bill',
         'bill-add': 'New Bill',
       };
-      return titles[this.$route.name] || 'Bills';
+      return titles[this.$route.name] || 'Coffer';
     }
   },
   methods: {

@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center px-4 bg-surface-50 dark:bg-surface-950">
     <div class="card p-8 w-full max-w-sm">
-      <h1 class="text-2xl font-bold text-center mb-6">Bills</h1>
+      <h1 class="text-2xl font-bold text-center mb-6">Coffer</h1>
 
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div>
