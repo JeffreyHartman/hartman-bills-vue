@@ -90,3 +90,13 @@ Path alias `@` maps to `src/`.
 
 - **Unit tests** (`tests/unit/`): Vitest + @vue/test-utils, jsdom environment. Tests for formatting utils, store mutations, and component rendering.
 - **E2E tests** (`tests/e2e/`): Playwright with Chromium. Tests full user flows: navigation, CRUD, dark mode, responsive.
+
+## Code Conventions
+
+- Use `@/` alias for all imports from `src/` (never relative `../` paths)
+- Async actions in views must have try/catch with user-facing error feedback
+- Async form submits need an `isSaving` guard + disabled buttons to prevent double-clicks
+- Supabase actions use pessimistic updates: commit mutation only after DB write succeeds
+- Supabase subscriptions (e.g. `onAuthStateChange`) must be unsubscribed on component unmount
+- Validate required env vars at module load with fail-fast throws
+- When dispatching updateBill, always include all existing fields (especially `paidDates`) to avoid data loss
