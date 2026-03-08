@@ -12,8 +12,8 @@ function makeStore(overrides = {}) {
     },
     getters: {
       summaryStats: () => ({
-        upcomingCount: 3,
-        upcomingTotal: 500,
+        currentMonthCount: 3,
+        currentMonthTotal: 500,
         overdueCount: 1,
         overdueTotal: 100,
         paidCount: 2,
@@ -43,13 +43,13 @@ function makeRouter() {
 }
 
 describe('SummaryStats', () => {
-  it('renders upcoming and overdue totals', () => {
+  it('renders current month and overdue totals', () => {
     const wrapper = mount(SummaryStats, {
       global: { plugins: [makeStore(), makeRouter()] },
     });
     expect(wrapper.text()).toContain('$500.00');
     expect(wrapper.text()).toContain('$100.00');
-    expect(wrapper.text()).toContain('3 bills');
+    expect(wrapper.text()).toContain('3 bills remaining');
     expect(wrapper.text()).toContain('1 bill');
   });
 
@@ -100,21 +100,20 @@ describe('BillItem', () => {
     expect(wrapper.text()).toContain('$142.50');
   });
 
-  it('shows recurring label for recurring bills', () => {
+  it('shows days until due for upcoming bills', () => {
     const wrapper = mount(BillItem, {
       props: { bill: futureBill },
       global: { plugins: [makeRouter()] },
     });
-    expect(wrapper.text()).toContain('Monthly');
+    expect(wrapper.text()).toContain('10 days');
   });
 
-  it('does not show recurring label for one-time bills', () => {
+  it('shows paid on label for paid bills with date', () => {
     const wrapper = mount(BillItem, {
       props: { bill: paidBill },
       global: { plugins: [makeRouter()] },
     });
-    expect(wrapper.text()).not.toContain('Monthly');
-    expect(wrapper.text()).not.toContain('One-time');
+    expect(wrapper.text()).toContain('Paid on');
   });
 
   it('shows line-through for paid bills', () => {

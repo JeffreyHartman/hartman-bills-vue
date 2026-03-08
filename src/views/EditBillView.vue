@@ -1,7 +1,122 @@
 <template>
   <div class="pt-6">
+    <!-- Edit scope chooser for recurring bills -->
+    <div v-if="showScopeChooser" class="space-y-3 mb-6">
+      <p class="text-sm font-medium text-surface-600 dark:text-surface-300">What would you like to edit?</p>
+      <button @click="editScope = 'instance'" class="card w-full p-4 text-left flex items-center gap-3 hover:border-accent transition-colors" :class="editScope === 'instance' ? 'border-accent ring-2 ring-accent/20' : ''">
+        <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-accent">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-medium text-sm">This instance only</p>
+          <p class="text-xs text-surface-400 mt-0.5">Change amount or due date for just this occurrence</p>
+        </div>
+      </button>
+      <button @click="editScope = 'all'" class="card w-full p-4 text-left flex items-center gap-3 hover:border-accent transition-colors" :class="editScope === 'all' ? 'border-accent ring-2 ring-accent/20' : ''">
+        <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-accent">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-medium text-sm">All instances</p>
+          <p class="text-xs text-surface-400 mt-0.5">Change the recurring bill and all future occurrences</p>
+        </div>
+      </button>
+    </div>
+
     <form @submit.prevent="saveBill" novalidate class="space-y-4">
-      <div class="card p-6 space-y-5">
+      <!-- Instance-only edit form -->
+      <div v-if="editScope === 'instance'" class="card p-6 space-y-5">
+        <p class="text-xs font-medium text-surface-400 uppercase tracking-wider">Editing {{ instanceDateLabel }}</p>
+
+        <!-- Amount -->
+        <div>
+          <label for="instanceAmount" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1.5">Amount</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-surface-400 font-mono">$</span>
+            <input
+              id="instanceAmount"
+              :value="instanceForm.amountDisplay"
+              @input="onInstanceAmountInput"
+              @keydown="onAmountKeydown"
+              type="text"
+              inputmode="decimal"
+              class="input-field pl-8 font-mono"
+              placeholder="0.00"
+            >
+          </div>
+        </div>
+
+        <!-- Due Date -->
+        <div>
+          <label for="instanceDueDate" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1.5">Due Date</label>
+          <input
+            id="instanceDueDate"
+            v-model="instanceForm.dueDate"
+            type="date"
+            class="input-field"
+          >
+        </div>
+      </div>
+
+      <!-- Full edit form -->
+      <div v-else class="card p-6 space-y-5">
+        <!-- Icon & Color Picker -->
+        <div>
+          <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-2">Icon</label>
+          <div class="flex items-center gap-3 mb-3">
+            <div
+              class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+              :style="{ backgroundColor: form.iconColor }"
+            >
+              <component :is="selectedIconComponent" class="w-6 h-6 text-white" :stroke-width="1.75" />
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium">{{ selectedIconLabel }}</p>
+              <p class="text-xs text-surface-400">Tap to change icon and color</p>
+            </div>
+            <button type="button" @click="showIconPicker = !showIconPicker" class="btn-secondary text-xs px-3 py-1.5">
+              {{ showIconPicker ? 'Done' : 'Change' }}
+            </button>
+          </div>
+
+          <div v-if="showIconPicker" class="space-y-3 p-3 bg-surface-50 dark:bg-surface-800 rounded-xl">
+            <!-- Icon grid -->
+            <div class="grid grid-cols-6 gap-2">
+              <button
+                v-for="icon in billIcons"
+                :key="icon.key"
+                type="button"
+                @click="form.icon = icon.key"
+                class="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                :style="{ backgroundColor: form.icon === icon.key ? form.iconColor : 'transparent' }"
+                :class="form.icon === icon.key ? 'ring-2 ring-offset-2 ring-accent' : 'hover:bg-surface-200 dark:hover:bg-surface-700'"
+                :title="icon.label"
+              >
+                <component :is="getIconComponent(icon.key)" class="w-5 h-5" :class="form.icon === icon.key ? 'text-white' : 'text-surface-500'" :stroke-width="1.75" />
+              </button>
+            </div>
+            <!-- Color grid -->
+            <div>
+              <p class="text-xs text-surface-400 mb-1.5">Background color</p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="color in iconColors"
+                  :key="color"
+                  type="button"
+                  @click="form.iconColor = color"
+                  class="w-8 h-8 rounded-full transition-all"
+                  :style="{ backgroundColor: color }"
+                  :class="form.iconColor === color ? 'ring-2 ring-offset-2 ring-surface-400' : 'hover:scale-110'"
+                ></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Name -->
         <div>
           <label for="name" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1.5">Bill Name</label>
@@ -115,7 +230,7 @@
       <div class="flex gap-3">
         <button type="button" @click="$router.back()" class="btn-secondary flex-1" :disabled="isSaving">Cancel</button>
         <button type="submit" class="btn-primary flex-1" :disabled="isSaving">
-          {{ isSaving ? 'Saving...' : (isEditing ? 'Save Changes' : 'Add Bill') }}
+          {{ isSaving ? 'Saving...' : saveButtonLabel }}
         </button>
       </div>
     </form>
@@ -124,7 +239,9 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { sanitizeMonetaryInput, cleanMonetaryPaste, sanitizeIntegerInput } from '@/utils/formatting.js';
+import { sanitizeMonetaryInput, cleanMonetaryPaste, sanitizeIntegerInput, formatDateLong, toLocalDateString } from '@/utils/formatting.js';
+import { BILL_ICONS, ICON_COLORS, ICON_MAP, DEFAULT_ICON, DEFAULT_ICON_COLOR } from '@/utils/billIcons.js';
+import { Receipt } from 'lucide-vue-next';
 
 export default {
   name: 'EditBillView',
@@ -132,6 +249,10 @@ export default {
     return {
       isSaving: false,
       formError: null,
+      editScope: null,
+      showIconPicker: false,
+      billIcons: BILL_ICONS,
+      iconColors: ICON_COLORS,
       form: {
         name: '',
         amountDisplay: '',
@@ -140,6 +261,12 @@ export default {
         interval: 1,
         unit: 'month',
         dayOfMonth: 1,
+        icon: DEFAULT_ICON,
+        iconColor: DEFAULT_ICON_COLOR,
+      },
+      instanceForm: {
+        amountDisplay: '',
+        dueDate: '',
       }
     };
   },
@@ -151,6 +278,33 @@ export default {
     existingBill() {
       if (!this.isEditing) return null;
       return this.billById(this.$route.params.id);
+    },
+    instanceDate() {
+      return this.$route.query.instance || null;
+    },
+    isRecurringInstance() {
+      return this.isEditing && this.existingBill?.recurring && this.instanceDate;
+    },
+    showScopeChooser() {
+      return this.isRecurringInstance && this.editScope === null;
+    },
+    instanceDateLabel() {
+      if (!this.instanceDate) return '';
+      const [year, month, day] = this.instanceDate.split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+      return formatDateLong(d);
+    },
+    selectedIconComponent() {
+      return ICON_MAP[this.form.icon] || Receipt;
+    },
+    selectedIconLabel() {
+      const found = BILL_ICONS.find(i => i.key === this.form.icon);
+      return found ? found.label : 'Receipt';
+    },
+    saveButtonLabel() {
+      if (!this.isEditing) return 'Add Bill';
+      if (this.editScope === 'instance') return 'Save Instance';
+      return 'Save Changes';
     }
   },
   created() {
@@ -159,6 +313,8 @@ export default {
       this.form.name = bill.name;
       this.form.amountDisplay = bill.amount != null ? String(bill.amount) : '';
       this.form.isRecurring = !!bill.recurring;
+      this.form.icon = bill.icon || DEFAULT_ICON;
+      this.form.iconColor = bill.iconColor || DEFAULT_ICON_COLOR;
       if (bill.recurring) {
         this.form.interval = bill.recurring.interval;
         this.form.unit = bill.recurring.unit;
@@ -168,27 +324,47 @@ export default {
         const d = new Date(bill.dueDate);
         this.form.dueDate = d.toISOString().split('T')[0];
       }
+
+      // Pre-fill instance form with existing override or base values
+      if (this.isRecurringInstance) {
+        const override = (bill.overrides || {})[this.instanceDate] || {};
+        this.instanceForm.amountDisplay = override.amount != null ? String(override.amount) : String(bill.amount);
+        this.instanceForm.dueDate = override.dueDate || this.instanceDate;
+      }
+
+      // If not a recurring instance, skip scope chooser
+      if (!this.isRecurringInstance) {
+        this.editScope = 'all';
+      }
+    } else {
+      // New bill — no scope chooser needed
+      this.editScope = 'all';
     }
   },
   methods: {
+    getIconComponent(key) {
+      return ICON_MAP[key] || Receipt;
+    },
     onAmountKeydown(e) {
-      // Allow: digits, decimal point, backspace, delete, tab, escape, enter, arrows, home, end
       const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
       if (allowed.includes(e.key)) return;
-      // Allow Ctrl/Cmd + A/C/V/X
       if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
-      // Allow digits
       if (/^\d$/.test(e.key)) return;
-      // Allow one decimal point
       if (e.key === '.' && !e.target.value.includes('.')) return;
       e.preventDefault();
     },
     onAmountInput(e) {
       const raw = e.target.value;
-      // Handle paste with commas/$ by cleaning first
       const cleaned = raw.includes(',') || raw.includes('$') ? cleanMonetaryPaste(raw) : sanitizeMonetaryInput(raw);
       this.form.amountDisplay = cleaned;
-      // Sync the DOM value if sanitization changed it
+      if (e.target.value !== cleaned) {
+        e.target.value = cleaned;
+      }
+    },
+    onInstanceAmountInput(e) {
+      const raw = e.target.value;
+      const cleaned = raw.includes(',') || raw.includes('$') ? cleanMonetaryPaste(raw) : sanitizeMonetaryInput(raw);
+      this.instanceForm.amountDisplay = cleaned;
       if (e.target.value !== cleaned) {
         e.target.value = cleaned;
       }
@@ -225,6 +401,14 @@ export default {
       e.target.value = this.form.dayOfMonth;
     },
     validateForm() {
+      if (this.editScope === 'instance') {
+        const amount = parseFloat(this.instanceForm.amountDisplay);
+        if (this.instanceForm.amountDisplay && (isNaN(amount) || amount <= 0)) {
+          return 'Please enter a valid amount greater than $0.';
+        }
+        return null;
+      }
+
       const amount = parseFloat(this.form.amountDisplay);
       if (!this.form.name.trim()) {
         return 'Bill name is required.';
@@ -261,11 +445,45 @@ export default {
       }
 
       this.isSaving = true;
+
+      try {
+        if (this.editScope === 'instance') {
+          await this.saveInstance();
+        } else {
+          await this.saveFullBill();
+        }
+        this.$router.push('/');
+      } catch (err) {
+        console.error('Failed to save bill:', err);
+        this.formError = 'Failed to save bill. Please try again.';
+      } finally {
+        this.isSaving = false;
+      }
+    },
+    async saveInstance() {
+      const overrideData = {};
+      const amount = parseFloat(this.instanceForm.amountDisplay);
+      if (!isNaN(amount) && amount > 0 && amount !== this.existingBill.amount) {
+        overrideData.amount = amount;
+      }
+      if (this.instanceForm.dueDate && this.instanceForm.dueDate !== this.instanceDate) {
+        overrideData.dueDate = this.instanceForm.dueDate;
+      }
+
+      await this.$store.dispatch('updateBillOverride', {
+        billId: this.existingBill.id,
+        instanceDate: this.instanceDate,
+        overrideData,
+      });
+    },
+    async saveFullBill() {
       const amount = parseFloat(this.form.amountDisplay);
 
       const billData = {
         name: this.form.name.trim(),
         amount,
+        icon: this.form.icon,
+        iconColor: this.form.iconColor,
         recurring: this.form.isRecurring ? {
           interval: parseInt(this.form.interval, 10),
           unit: this.form.unit,
@@ -276,22 +494,14 @@ export default {
         dueDate: this.form.isRecurring ? null : new Date(this.form.dueDate + 'T12:00:00').toISOString(),
       };
 
-      try {
-        if (this.isEditing) {
-          await this.$store.dispatch('updateBill', {
-            id: this.existingBill.id,
-            paidDates: this.existingBill.paidDates,
-            ...billData,
-          });
-        } else {
-          await this.$store.dispatch('addBill', { ...billData, creationDate: new Date().toISOString() });
-        }
-        this.$router.push('/');
-      } catch (err) {
-        console.error('Failed to save bill:', err);
-        this.formError = 'Failed to save bill. Please try again.';
-      } finally {
-        this.isSaving = false;
+      if (this.isEditing) {
+        await this.$store.dispatch('updateBill', {
+          id: this.existingBill.id,
+          paidDates: this.existingBill.paidDates,
+          ...billData,
+        });
+      } else {
+        await this.$store.dispatch('addBill', { ...billData, creationDate: new Date().toISOString() });
       }
     }
   }

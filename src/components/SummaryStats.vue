@@ -1,9 +1,9 @@
 <template>
   <div class="grid grid-cols-2 gap-3 mb-6">
     <div class="card p-4">
-      <p class="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">Upcoming</p>
-      <p class="text-2xl font-mono font-semibold mt-1">{{ formatAmount(stats.upcomingTotal) }}</p>
-      <p class="text-xs text-surface-400 mt-0.5">{{ stats.upcomingCount }} bill{{ stats.upcomingCount !== 1 ? 's' : '' }}</p>
+      <p class="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider">{{ monthLabel }}</p>
+      <p class="text-2xl font-mono font-semibold mt-1">{{ formatAmount(stats.currentMonthTotal) }}</p>
+      <p class="text-xs text-surface-400 mt-0.5">{{ stats.currentMonthCount }} bill{{ stats.currentMonthCount !== 1 ? 's' : '' }} remaining</p>
     </div>
     <div class="card p-4" :class="stats.overdueCount > 0 ? 'border-status-overdue/30 bg-status-overdue-light/30 dark:bg-status-overdue-dark/20' : ''">
       <p class="text-xs font-medium uppercase tracking-wider" :class="stats.overdueCount > 0 ? 'text-status-overdue' : 'text-surface-400 dark:text-surface-500'">Overdue</p>
@@ -23,6 +23,9 @@ export default {
     ...mapGetters(['summaryStats']),
     stats() {
       return this.summaryStats;
+    },
+    monthLabel() {
+      return new Date().toLocaleDateString('en-US', { month: 'long' });
     }
   },
   methods: { formatAmount }

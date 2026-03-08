@@ -3,15 +3,23 @@
     <!-- Status badge & amount -->
     <div class="card p-6">
       <div class="flex items-start justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-semibold">{{ bill.name }}</h2>
-          <span
-            class="inline-block mt-1 text-xs font-medium px-2.5 py-1 rounded-lg"
-            :class="statusBadgeClass"
-          >{{ statusLabel }}</span>
+        <div class="flex items-center gap-3">
+          <div
+            class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center"
+            :style="{ backgroundColor: bill.iconColor || '#4f46e5' }"
+          >
+            <component :is="iconComponent" class="w-6 h-6 text-white" :stroke-width="1.75" />
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold">{{ bill.name }}</h2>
+            <span
+              class="inline-block mt-1 text-xs font-medium px-2.5 py-1 rounded-lg"
+              :class="statusBadgeClass"
+            >{{ statusLabel }}</span>
+          </div>
         </div>
         <p class="text-2xl font-mono font-bold" :class="isPaid ? 'text-surface-400 line-through' : ''">
-          {{ formatAmount(bill.amount) }}
+          {{ formatAmount(displayAmount) }}
         </p>
       </div>
 
@@ -23,7 +31,7 @@
         </div>
         <div class="flex justify-between">
           <dt class="text-surface-400 dark:text-surface-500">Days Until Due</dt>
-          <dd class="font-medium" :class="dueTextClass">{{ dueLabel }}</dd>
+          <dd class="font-medium" :class="dueTextClass">{{ daysUntilDueDisplay }}</dd>
         </div>
         <div class="flex justify-between">
           <dt class="text-surface-400 dark:text-surface-500">Frequency</dt>
@@ -60,7 +68,7 @@
       </button>
 
       <router-link
-        :to="{ name: 'bill-edit', params: { id: bill.id } }"
+        :to="editRoute"
         class="btn-secondary flex items-center justify-center gap-2"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
@@ -89,7 +97,9 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { formatAmount, formatDateLong, daysUntilDue, daysUntilDueLabel, billStatus, recurringLabel } from '@/utils/formatting.js';
+import { formatAmount, formatDateLong, daysUntilDue, daysUntilDueLabel, billStatus, recurringLabel, toLocalDateString } from '@/utils/formatting.js';
+import { ICON_MAP } from '@/utils/billIcons.js';
+import { Receipt } from 'lucide-vue-next';
 
 export default {
   name: 'BillDetailsView',
@@ -104,6 +114,14 @@ export default {
       if (raw) return this.parseCalendarDate(raw);
       return this.bill.dueDate || this.bill.creationDate;
     },
+    displayAmount() {
+      if (!this.bill) return 0;
+      if (!this.bill.recurring || !this.bill.overrides) return this.bill.amount;
+      const key = toLocalDateString(this.displayDueDate);
+      const override = this.bill.overrides[key];
+      if (override && override.amount != null) return Number(override.amount);
+      return this.bill.amount;
+    },
     isPaid() {
       if (!this.bill) return false;
       const dueDate = this.displayDueDate;
@@ -112,6 +130,10 @@ export default {
         const d2 = new Date(dueDate);
         return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
       });
+    },
+    iconComponent() {
+      if (!this.bill) return Receipt;
+      return ICON_MAP[this.bill.icon] || Receipt;
     },
     status() {
       return billStatus(this.displayDueDate, this.isPaid);
@@ -129,8 +151,14 @@ export default {
       };
       return classes[this.status];
     },
-    dueLabel() {
-      return daysUntilDueLabel(this.displayDueDate);
+    daysUntilDueDisplay() {
+      const days = daysUntilDue(this.displayDueDate);
+      if (this.isPaid) return 'Paid';
+      if (days === 0) return 'Due today';
+      if (days === 1) return 'Due tomorrow';
+      if (days === -1) return '1 day overdue';
+      if (days < 0) return `${Math.abs(days)} days overdue`;
+      return `${days} days`;
     },
     dueTextClass() {
       if (this.isPaid) return 'text-status-paid';
@@ -138,6 +166,13 @@ export default {
       if (days < 0) return 'text-status-overdue';
       if (days <= 3) return 'text-status-warning';
       return '';
+    },
+    editRoute() {
+      const route = { name: 'bill-edit', params: { id: this.bill.id } };
+      if (this.bill.recurring && this.$route.query.due) {
+        route.query = { instance: this.$route.query.due };
+      }
+      return route;
     }
   },
   methods: {

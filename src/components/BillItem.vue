@@ -1,28 +1,39 @@
 <template>
   <router-link
-    :to="{ name: 'bill-details', params: { id: bill.id }, query: bill.dueDate ? { due: toLocalDateString(bill.dueDate) } : {} }"
+    :to="{ name: 'bill-details', params: { id: bill.id }, query: bill.dueDate ? { due: toLocalDateString(bill.originalDueDate || bill.dueDate) } : {} }"
     class="block"
   >
     <div
-      class="flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-150
-             hover:bg-surface-50 dark:hover:bg-surface-800/50 group"
+      class="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl transition-all duration-150
+             hover:bg-surface-50 dark:hover:bg-surface-800/50 group card"
     >
-      <!-- Status indicator -->
+      <!-- Icon circle -->
       <div
-        class="w-1 h-10 rounded-full flex-shrink-0"
-        :class="statusColor"
-      ></div>
+        class="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center"
+        :style="{ backgroundColor: bill.iconColor || '#4f46e5' }"
+      >
+        <component :is="iconComponent" class="w-5 h-5 text-white" :stroke-width="1.75" />
+      </div>
 
       <!-- Bill info -->
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2">
-          <span class="font-medium text-sm truncate">{{ bill.name }}</span>
-          <span
-            v-if="bill.recurring"
-            class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 flex-shrink-0"
-          >{{ recurringLabel(bill.recurring) }}</span>
-        </div>
-        <p class="text-xs mt-0.5" :class="dueTextClass">{{ dueLabel }}</p>
+        <span class="font-medium text-sm truncate block">{{ bill.name }}</span>
+        <p class="text-xs mt-0.5 flex items-center gap-1" :class="dueTextClass">
+          <template v-if="bill.isPaid">
+            <span class="text-status-paid font-medium">Paid on</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-2.5 h-2.5 text-surface-300">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            <span class="text-surface-500 dark:text-surface-400">{{ formatDateWithYear(paidDate) }}</span>
+          </template>
+          <template v-else>
+            <span>{{ formatDateWithYear(bill.dueDate) }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-2.5 h-2.5 text-surface-300">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            <span>{{ dueLabel }}</span>
+          </template>
+        </p>
       </div>
 
       <!-- Amount -->
@@ -42,7 +53,9 @@
 </template>
 
 <script>
-import { formatAmount, daysUntilDueLabel, billStatus, recurringLabel, toLocalDateString } from '@/utils/formatting.js';
+import { formatAmount, formatDate, formatDateWithYear, daysUntilDue, billStatus, toLocalDateString } from '@/utils/formatting.js';
+import { ICON_MAP } from '@/utils/billIcons.js';
+import { Receipt } from 'lucide-vue-next';
 
 export default {
   name: 'BillItem',
@@ -50,21 +63,29 @@ export default {
     bill: { type: Object, required: true }
   },
   computed: {
+    iconComponent() {
+      return ICON_MAP[this.bill.icon] || Receipt;
+    },
     status() {
       return billStatus(this.bill.dueDate, this.bill.isPaid);
     },
-    statusColor() {
-      const colors = {
-        paid: 'bg-status-paid',
-        overdue: 'bg-status-overdue',
-        warning: 'bg-status-warning',
-        upcoming: 'bg-accent/40',
-      };
-      return colors[this.status] || 'bg-surface-300';
+    paidDate() {
+      if (!this.bill.isPaid || !this.bill.paidDates) return null;
+      const dueDate = new Date(this.bill.dueDate);
+      const match = this.bill.paidDates.find(pd => {
+        const d = new Date(pd);
+        return d.getFullYear() === dueDate.getFullYear() &&
+               d.getMonth() === dueDate.getMonth() &&
+               d.getDate() === dueDate.getDate();
+      });
+      return match || this.bill.dueDate;
     },
     dueLabel() {
-      if (this.bill.isPaid) return 'Paid';
-      return daysUntilDueLabel(this.bill.dueDate);
+      const days = daysUntilDue(this.bill.dueDate);
+      if (days === 0) return 'Today';
+      if (days === 1) return 'Tomorrow';
+      if (days < 0) return `${Math.abs(days)} days overdue`;
+      return `${days} days`;
     },
     dueTextClass() {
       if (this.bill.isPaid) return 'text-status-paid';
@@ -73,6 +94,6 @@ export default {
       return 'text-surface-400 dark:text-surface-500';
     }
   },
-  methods: { formatAmount, recurringLabel, toLocalDateString }
+  methods: { formatAmount, formatDate, formatDateWithYear, toLocalDateString }
 };
 </script>
